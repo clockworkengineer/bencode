@@ -43,7 +43,7 @@ mod tests {
         }
     }
     #[test]
-    fn create_push_to_list_works() {
+    fn push_to_list_works() {
         let variant = Node::List(Vec::<Node>::new());
         match variant {
             Node::List(mut list) => {
@@ -52,6 +52,27 @@ mod tests {
                 match list[0] {
                     Node::Integer(integer) => {
                         assert_eq!(integer, 32);
+                    }
+                    _ => {assert_eq!(false, true);}
+                }
+            }
+            _ => {assert_eq!(false, true);}
+        }
+    }
+    #[test]
+    fn push_multiple_to_list_works() {
+        let variant = Node::List(Vec::<Node>::new());
+        match variant {
+            Node::List(mut list) => {
+                list.push(Node::Integer(32));
+                list.push(Node::Integer(33));
+                list.push(Node::Integer(34));
+                list.push(Node::Integer(35));
+                list.push(Node::Integer(36));
+                assert_eq!(list.len(), 5);
+                match list[4] {
+                    Node::Integer(integer) => {
+                        assert_eq!(integer, 36);
                     }
                     _ => {assert_eq!(false, true);}
                 }
@@ -70,7 +91,7 @@ mod tests {
         }
     }
     #[test]
-    fn create_add_to_dictionary_works() {
+    fn add_to_dictionary_works() {
         let variant = Node::Dictionary(HashMap::new());
         match variant {
             Node::Dictionary(mut dictionary) => {
@@ -79,6 +100,27 @@ mod tests {
                 match dictionary["test"] {
                     Node::Integer(integer) => {
                         assert_eq!(integer, 32);
+                    }
+                    _ => {assert_eq!(false, true);}
+                }
+            }
+            _ => {assert_eq!(false, true);}
+        }
+    }
+    #[test]
+    fn add_multiple_to_dictionary_works() {
+        let variant = Node::Dictionary(HashMap::new());
+        match variant {
+            Node::Dictionary(mut dictionary) => {
+                dictionary.insert(String::from("test1"), Node::Integer(32));
+                dictionary.insert(String::from("test2"), Node::Integer(33));
+                dictionary.insert(String::from("test3"), Node::Integer(34));
+                dictionary.insert(String::from("test4"), Node::Integer(35));
+                dictionary.insert(String::from("test5"), Node::Integer(36));
+                assert_eq!(dictionary.len(), 5);
+                match dictionary["test5"] {
+                    Node::Integer(integer) => {
+                        assert_eq!(integer, 36);
                     }
                     _ => {assert_eq!(false, true);}
                 }
