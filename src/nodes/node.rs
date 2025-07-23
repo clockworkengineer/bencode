@@ -19,7 +19,7 @@ mod tests {
             Node::Integer(integer) => {
                 assert_eq!(integer, 32);
             }
-            _ => {}
+            _ => {assert_eq!(false, true);}
         }
     }
     #[test]
@@ -29,7 +29,7 @@ mod tests {
             Node::Str(string) => {
                 assert_eq!(string.as_str(), "test");
             }
-            _ => {}
+            _ => {assert_eq!(false, true);}
         }
     }
     #[test]
@@ -39,17 +39,51 @@ mod tests {
             Node::List(list) => {
                 assert_eq!(list.is_empty(), true);
             }
-            _ => {}
+            _ => {assert_eq!(false, true);}
+        }
+    }
+    #[test]
+    fn create_push_to_list_works() {
+        let variant = Node::List(Vec::<Node>::new());
+        match variant {
+            Node::List(mut list) => {
+                list.push(Node::Integer(32));
+                assert_eq!(list.len(), 1);
+                match list[0] {
+                    Node::Integer(integer) => {
+                        assert_eq!(integer, 32);
+                    }
+                    _ => {assert_eq!(false, true);}
+                }
+            }
+            _ => {assert_eq!(false, true);}
         }
     }
     #[test]
     fn create_dictionary_works() {
         let variant = Node::Dictionary(HashMap::new());
         match variant {
-            Node::Dictionary(list) => {
-                assert_eq!(list.is_empty(), true);
+            Node::Dictionary(dictionary) => {
+                assert_eq!(dictionary.is_empty(), true);
             }
-            _ => {}
+            _ => {assert_eq!(false, true);}
+        }
+    }
+    #[test]
+    fn create_add_to_dictionary_works() {
+        let variant = Node::Dictionary(HashMap::new());
+        match variant {
+            Node::Dictionary(mut dictionary) => {
+                dictionary.insert(String::from("test"), Node::Integer(32));
+                assert_eq!(dictionary.len(), 1);
+                match dictionary["test"] {
+                    Node::Integer(integer) => {
+                        assert_eq!(integer, 32);
+                    }
+                    _ => {assert_eq!(false, true);}
+                }
+            }
+            _ => {assert_eq!(false, true);}
         }
     }
 }
