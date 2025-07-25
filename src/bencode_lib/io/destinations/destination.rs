@@ -1,1 +1,1 @@
-pub enum Destination { Buffer(String), File(String)}
+// pub enum Destination { Buffer(String), File(String)}
