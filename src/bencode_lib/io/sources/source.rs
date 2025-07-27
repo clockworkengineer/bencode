@@ -18,6 +18,9 @@ impl Buffer {
     pub fn more(&mut self) -> bool {
         self.position < self.buffer.len()
     }
+    pub fn reset(&mut self)  {
+        self.position = 0;
+    }
     pub fn to_string(&self) -> String{
         String::from_utf8_lossy(&self.buffer).into_owned()
     }
@@ -47,5 +50,12 @@ mod tests {
         let  mut source = Buffer::new(String::from("i32e").as_bytes());
         while source.more() { source.next()}
         match source.current() { None => assert!(true), _ => assert!(false)}
+    }
+    #[test]
+    fn reset_in_source_buffer_works() {
+        let  mut source = Buffer::new(String::from("i32e").as_bytes());
+        while source.more() { source.next()}
+        source.reset();
+        match source.current() { Some('i') => assert!(true), _ => assert!(false)}
     }
 }
