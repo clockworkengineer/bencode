@@ -1,5 +1,5 @@
 
-pub struct Buffer {  pub buffer : Vec<u8>, position : usize}
+pub struct Buffer {  buffer : Vec<u8>, position : usize}
 
 impl Buffer {
     pub fn new(to_add: &[u8]) -> Self {
