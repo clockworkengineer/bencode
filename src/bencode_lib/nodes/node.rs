@@ -9,6 +9,12 @@ pub enum Node {
     Dictionary(HashMap<String, Node>),
     }
 
+impl<T: Into<Node>> From<Vec<T>> for Node {
+    fn from(value: Vec<T>) -> Self {
+        Node::List(value.into_iter().map(|x| x.into()).collect())
+    }
+}
+
 impl From<u32> for Node {
     fn from(value: u32) -> Self {
         Node::Integer(value)
@@ -21,11 +27,7 @@ impl From<&str> for Node {
     }
 }
 
-impl<T: Into<Node>> From<Vec<T>> for Node {
-    fn from(value: Vec<T>) -> Self {
-        Node::List(value.into_iter().map(|x| x.into()).collect())
-    }
-}
+
 
 impl From<HashMap<String, Node>> for Node {
     fn from(value: HashMap<String, Node>) -> Self {
