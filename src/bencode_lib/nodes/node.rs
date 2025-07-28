@@ -174,7 +174,7 @@ mod tests {
         }
     }
     #[test]
-    fn make_an_string_node_works() {
+    fn make_a_string_node_works() {
         let node = make_node("i32e");
         match node {
             Node::Str(string) => {
@@ -184,7 +184,7 @@ mod tests {
         }
     }
     #[test]
-    fn make_an_list_node_works() {
+    fn make_a_list_node_works() {
         let node = make_node(Vec::<Node>::new());
         match node {
             Node::List(list) => {
@@ -194,7 +194,7 @@ mod tests {
         }
     }
     #[test]
-    fn make_an_dictionary_node_works() {
+    fn make_a_dictionary_node_works() {
         let node = make_node(HashMap::<String, Node>::new());
         match node {
             Node::Dictionary(dictionary) => {
