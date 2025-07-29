@@ -1,3 +1,3 @@
-mod nodes;
-mod io;
-mod parser;
+pub mod nodes;
+pub mod io;
+pub mod parser;
