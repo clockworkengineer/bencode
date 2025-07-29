@@ -126,4 +126,27 @@ mod tests {
             _ => panic!("Expected dictionary"),
         }
     }
+    #[test]
+    fn parse_integer_with_error() {
+        let mut source = Buffer::new(b"i32");
+        assert!(matches!(parse(&mut source), None));
+    }
+
+    #[test]
+    fn parse_string_with_error() {
+        let mut source = Buffer::new(b"4:tes");
+        assert!(matches!(parse(&mut source), None));
+    }
+
+    #[test]
+    fn parse_list_with_error() {
+        let mut source = Buffer::new(b"li32ei33");
+        assert!(matches!(parse(&mut source), None));
+    }
+
+    #[test]
+    fn parse_dictionary_with_error() {
+        let mut source = Buffer::new(b"d4:testi32e");
+        assert!(matches!(parse(&mut source), None));
+    }
 }
