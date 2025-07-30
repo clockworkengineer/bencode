@@ -1,28 +1,33 @@
 use crate::bencode_lib::nodes::node::Node;
 use crate::bencode_lib::nodes::node::make_node;
+use crate::bencode_lib::io::destinations::buffer::Buffer;
 
-pub fn stringify(node: &Node) -> String {
+pub fn stringify(node: &Node, destination: &mut Buffer) {
     match node {
-        Node::Integer(value) => format!("i{}e", value),
-        Node::Str(value) => format!("{}:{}", value.len(), value),
+        Node::Integer(value) => {
+            let s = format!("i{}e", value);
+            destination.add_bytes(s.as_str());
+        }
+        Node::Str(value) => {
+            let s = format!("{}:{}", value.len(), value);
+            destination.add_bytes(s.as_str());
+        }
         Node::List(items) => {
-            let mut result = String::from("l");
+            destination.buffer.push(b'l');
             for item in items {
-                result.push_str(&stringify(item));
+                stringify(item, destination);
             }
-            result.push('e');
-            result
+            destination.buffer.push(b'e');
         }
         Node::Dictionary(items) => {
-            let mut result = String::from("d");
+            destination.buffer.push(b'd');
             let mut sorted: Vec<_> = items.iter().collect();
             sorted.sort_by(|a, b| a.0.cmp(b.0));
             for (key, value) in sorted {
-                result.push_str(&stringify(&Node::Str(key.clone())));
-                result.push_str(&stringify(value));
+                stringify(&Node::Str(key.clone()), destination);
+                stringify(value, destination);
             }
-            result.push('e');
-            result
+            destination.buffer.push(b'e');
         }
     }
 }
@@ -34,34 +39,46 @@ mod tests {
 
     #[test]
     fn stringify_integer_works() {
-        assert_eq!(stringify(&make_node(32)), "i32e");
+        let mut destination = Buffer::new();
+        stringify(&make_node(32), &mut destination);
+        assert_eq!(destination.to_string(), "i32e");
     }
 
     #[test]
     fn stringify_string_works() {
-        assert_eq!(stringify(&make_node("test")), "4:test");
+        let mut destination = Buffer::new();
+        stringify(&make_node("test"), &mut destination);
+        assert_eq!(destination.to_string(), "4:test");
     }
 
     #[test]
     fn stringify_empty_list_works() {
-        assert_eq!(stringify(&make_node(vec![] as Vec<Node>)), "le");
+        let mut destination = Buffer::new();
+        stringify(&make_node(vec![] as Vec<Node>), &mut destination);
+        assert_eq!(destination.to_string(), "le");
     }
 
     #[test]
     fn stringify_list_works() {
+        let mut destination = Buffer::new();
         let list = vec![make_node(32), make_node("test")];
-        assert_eq!(stringify(&make_node(list)), "li32e4:teste");
+        stringify(&make_node(list), &mut destination);
+        assert_eq!(destination.to_string(), "li32e4:teste");
     }
 
     #[test]
     fn stringify_empty_dictionary_works() {
-        assert_eq!(stringify(&make_node(HashMap::new())), "de");
+        let mut destination = Buffer::new();
+        stringify(&make_node(HashMap::new()), &mut destination);
+        assert_eq!(destination.to_string(), "de");
     }
 
     #[test]
     fn stringify_dictionary_works() {
+        let mut destination = Buffer::new();
         let mut dict = HashMap::new();
         dict.insert(String::from("key"), make_node(32));
-        assert_eq!(stringify(&make_node(dict)), "d3:keyi32ee");
+        stringify(&make_node(dict), &mut destination);
+        assert_eq!(destination.to_string(), "d3:keyi32ee");
     }
 }
