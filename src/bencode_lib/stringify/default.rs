@@ -1,5 +1,4 @@
-use crate::bencode_lib::nodes::node::Node;
-use crate::bencode_lib::nodes::node::make_node;
+use crate::bencode_lib::nodes::node::*;
 use crate::bencode_lib::io::destinations::buffer::Buffer;
 
 pub fn stringify(node: &Node, destination: &mut Buffer) {
