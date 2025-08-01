@@ -1,27 +1,35 @@
-
 pub struct Buffer {  pub buffer : Vec<u8>}
 
 impl Buffer {
     pub fn new() -> Self {
         Self { buffer: vec![] }
     }
-    pub fn add_byte(&mut self, byte: u8) {
-       self.buffer.push(byte);
-    }
-    pub fn add_bytes(&mut self, bytes: &str) {
-        self.buffer.extend_from_slice(bytes.as_bytes());
-    }
-    pub fn clear(&mut self) {
-        self.buffer.clear();
-    }
     pub fn to_string(&self) -> String{
         String::from_utf8_lossy(&self.buffer).into_owned()
     }
 }
 
+impl IDestination for Buffer {
+    fn add_byte(&mut self, byte: u8) {
+        self.buffer.push(byte);
+    }
+    fn add_bytes(&mut self, bytes: &str) {
+        self.buffer.extend_from_slice(bytes.as_bytes());
+    }
+    fn clear(&mut self) {
+        self.buffer.clear();
+    }
+}
+
+pub trait IDestination {
+    fn add_byte(&mut self, byte: u8);
+    fn add_bytes(&mut self, bytes: &str);
+    fn clear(&mut self);
+}
+
 #[cfg(test)]
 mod tests {
-    use super::Buffer;
+    use super::*;
     #[test]
     fn add_byte_to_destination_buffer_works() {
         let mut destination = Buffer::new();

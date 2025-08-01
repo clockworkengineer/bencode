@@ -1,7 +1,7 @@
 use crate::bencode_lib::nodes::node::*;
-use crate::bencode_lib::io::destinations::buffer::Buffer;
+use crate::bencode_lib::io::destinations::buffer::{Buffer, IDestination};
 
-pub fn stringify(node: &Node, destination: &mut Buffer) {
+pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
     match node {
         Node::Integer(value) => {
             let s = format!("i{}e", value);
@@ -12,21 +12,21 @@ pub fn stringify(node: &Node, destination: &mut Buffer) {
             destination.add_bytes(s.as_str());
         }
         Node::List(items) => {
-            destination.buffer.push(b'l');
+            destination.add_byte(b'l');
             for item in items {
                 stringify(item, destination);
             }
-            destination.buffer.push(b'e');
+            destination.add_byte(b'e');
         }
         Node::Dictionary(items) => {
-            destination.buffer.push(b'd');
+            destination.add_byte(b'd');
             let mut sorted: Vec<_> = items.iter().collect();
             sorted.sort_by(|a, b| a.0.cmp(b.0));
             for (key, value) in sorted {
                 stringify(&Node::Str(key.clone()), destination);
                 stringify(value, destination);
             }
-            destination.buffer.push(b'e');
+            destination.add_byte(b'e');
         }
     }
 }
