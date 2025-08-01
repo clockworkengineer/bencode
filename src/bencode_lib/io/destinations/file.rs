@@ -37,17 +37,55 @@ mod tests {
     use std::io::Read;
 
     #[test]
-    fn write_to_file_works() {
-        let test_path = "test_output.txt";
-        {
-            let mut file = File::new(test_path).unwrap();
-            file.add_bytes("test");
-        }
+    fn create_file_destination_works() -> std::io::Result<()> {
+        let path = "test_create.txt";
+        let _file = File::new(path)?;
+        assert!(fs::metadata(path).is_ok());
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn add_byte_works() -> std::io::Result<()> {
+        let path = "test_byte.txt";
+        let mut file = File::new(path)?;
+        file.add_byte(b'A');
 
         let mut content = String::new();
-        StdFile::open(test_path).unwrap().read_to_string(&mut content).unwrap();
+        StdFile::open(path)?.read_to_string(&mut content)?;
+        assert_eq!(content, "A");
+
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn add_bytes_works() -> std::io::Result<()> {
+        let path = "test_bytes.txt";
+        let mut file = File::new(path)?;
+        file.add_bytes("test");
+
+        let mut content = String::new();
+        StdFile::open(path)?.read_to_string(&mut content)?;
         assert_eq!(content, "test");
 
-        fs::remove_file(test_path).unwrap();
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn clear_works() -> std::io::Result<()> {
+        let path = "test_clear.txt";
+        let mut file = File::new(path)?;
+        file.add_bytes("test");
+        file.clear();
+
+        let mut content = String::new();
+        StdFile::open(path)?.read_to_string(&mut content)?;
+        assert_eq!(content, "");
+
+        fs::remove_file(path)?;
+        Ok(())
     }
 }
+
