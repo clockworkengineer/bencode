@@ -6,7 +6,7 @@ pub trait ISource {
 }
 
 pub trait IDestination {
-    fn add_byte(&mut self, byte: u8);
+    fn add_byte(&mut self, byte: u8); 
     fn add_bytes(&mut self, bytes: &str);
     fn clear(&mut self);
 }

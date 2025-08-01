@@ -1,0 +1,117 @@
+use std::fs::File as StdFile;
+use std::io::{Read, Seek, SeekFrom};
+use crate::bencode_lib::io::traits::ISource;
+
+pub struct File {
+    file: StdFile,
+    current_byte: Option<u8>,
+}
+
+impl File {
+    pub fn new(path: &str) -> std::io::Result<Self> {
+        let mut file = StdFile::open(path)?;
+        let mut current_byte = [0u8; 1];
+        let has_byte = file.read(&mut current_byte)? == 1;
+
+        Ok(Self {
+            file,
+            current_byte: if has_byte { Some(current_byte[0]) } else { None },
+        })
+    }
+}
+
+impl ISource for File {
+    fn next(&mut self) {
+        let mut byte = [0u8; 1];
+        self.current_byte = if self.file.read(&mut byte).unwrap_or(0) == 1 {
+            Some(byte[0])
+        } else {
+            None
+        };
+    }
+
+    fn current(&mut self) -> Option<char> {
+        self.current_byte.map(|b| b as char)
+    }
+
+    fn more(&mut self) -> bool {
+        self.current_byte.is_some()
+    }
+
+    fn reset(&mut self) {
+        if let Ok(_) = self.file.seek(SeekFrom::Start(0)) {
+            let mut byte = [0u8; 1];
+            self.current_byte = if self.file.read(&mut byte).unwrap_or(0) == 1 {
+                Some(byte[0])
+            } else {
+                None
+            };
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::io::Write;
+
+    fn create_test_file(content: &str) -> String {
+        let path = format!("test_{}.txt", rand::random::<u32>());
+        let mut file = fs::File::create(&path).unwrap();
+        file.write_all(content.as_bytes()).unwrap();
+        path
+    }
+
+    fn cleanup_file(path: &str) {
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn create_source_file_works() {
+        let path = create_test_file("i32e");
+        let source = File::new(&path);
+        assert!(source.is_ok());
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn read_character_from_source_file_works() {
+        let path = create_test_file("i32e");
+        let mut source = File::new(&path).unwrap();
+        assert_eq!(source.current(), Some('i'));
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn move_to_next_character_in_source_file_works() {
+        let path = create_test_file("i32e");
+        let mut source = File::new(&path).unwrap();
+        source.next();
+        assert_eq!(source.current(), Some('3'));
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn move_to_last_character_in_source_file_works() {
+        let path = create_test_file("i32e");
+        let mut source = File::new(&path).unwrap();
+        while source.more() {
+            source.next();
+        }
+        assert_eq!(source.current(), None);
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn reset_in_source_file_works() {
+        let path = create_test_file("i32e");
+        let mut source = File::new(&path).unwrap();
+        while source.more() {
+            source.next();
+        }
+        source.reset();
+        assert_eq!(source.current(), Some('i'));
+        cleanup_file(&path);
+    }
+}
