@@ -1,3 +1,4 @@
+// use crate::bencode_lib::io::sources::buffer::Source;
 
 pub struct Buffer {  buffer : Vec<u8>, position : usize}
 
@@ -5,30 +6,40 @@ impl Buffer {
     pub fn new(to_add: &[u8]) -> Self {
         Self { buffer : to_add.to_vec(), position: 0 }
     }
-    pub fn next(&mut self) {
+    pub fn to_string(&self) -> String{
+        String::from_utf8_lossy(&self.buffer).into_owned()
+    }
+}
+
+impl ISource for Buffer {
+    fn next(&mut self) {
         self.position += 1;
     }
-    pub fn current(&mut self) -> Option<char> {
+    fn current(&mut self) -> Option<char> {
         if self.more() {
             Some(self.buffer[self.position] as char)
         } else {
             None
         }
     }
-    pub fn more(&mut self) -> bool {
+    fn more(&mut self) -> bool {
         self.position < self.buffer.len()
     }
-    pub fn reset(&mut self)  {
+    fn reset(&mut self) {
         self.position = 0;
     }
-    pub fn to_string(&self) -> String{
-        String::from_utf8_lossy(&self.buffer).into_owned()
-    }
+}
+
+pub trait ISource {
+    fn next(&mut self);
+    fn current(&mut self) -> Option<char>;
+    fn more(&mut self) -> bool;
+    fn reset(&mut self);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Buffer;
+    use super::*;
     #[test]
     fn create_source_buffer_works() {
         let  source = Buffer::new(String::from("i32e").as_bytes());

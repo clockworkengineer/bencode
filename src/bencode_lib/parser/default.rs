@@ -1,8 +1,8 @@
-use crate::bencode_lib::io::sources::buffer::Buffer;
 use crate::bencode_lib::nodes::node::Node;
 use std::collections::HashMap;
+use crate::bencode_lib::io::sources::buffer::{ISource, Buffer};
 
-pub fn parse(source: &mut Buffer) -> Result<Node, String> {
+pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
     match source.current() {
         Some('i') => parse_integer(source),
         Some('l') => parse_list(source),
@@ -13,7 +13,7 @@ pub fn parse(source: &mut Buffer) -> Result<Node, String> {
     }
 }
 
-fn parse_integer(source: &mut Buffer) -> Result<Node, String> {
+fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'i'
     let mut number = String::new();
     while let Some(c) = source.current() {
@@ -29,7 +29,7 @@ fn parse_integer(source: &mut Buffer) -> Result<Node, String> {
     Err("Unterminated integer".to_string())
 }
 
-fn parse_string(source: &mut Buffer) -> Result<Node, String> {
+fn parse_string(source: &mut dyn ISource) -> Result<Node, String> {
     let mut length = String::new();
     while let Some(c) = source.current() {
         if c == ':' {
@@ -54,7 +54,7 @@ fn parse_string(source: &mut Buffer) -> Result<Node, String> {
     Ok(Node::Str(string))
 }
 
-fn parse_list(source: &mut Buffer) -> Result<Node, String> {
+fn parse_list(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'l'
     let mut list = Vec::new();
     while let Some(c) = source.current() {
@@ -67,7 +67,7 @@ fn parse_list(source: &mut Buffer) -> Result<Node, String> {
     Err("Unterminated list".to_string())
 }
 
-fn parse_dictionary(source: &mut Buffer) -> Result<Node, String> {
+fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'd'
     let mut dict = HashMap::new();
     while let Some(c) = source.current() {
