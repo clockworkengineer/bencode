@@ -1,4 +1,4 @@
-// use crate::bencode_lib::io::sources::buffer::Source;
+use crate::bencode_lib::io::traits::ISource;
 
 pub struct Buffer {  buffer : Vec<u8>, position : usize}
 
@@ -29,14 +29,6 @@ impl ISource for Buffer {
         self.position = 0;
     }
 }
-
-pub trait ISource {
-    fn next(&mut self);
-    fn current(&mut self) -> Option<char>;
-    fn more(&mut self) -> bool;
-    fn reset(&mut self);
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

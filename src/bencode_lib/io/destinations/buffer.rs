@@ -1,3 +1,4 @@
+use crate::bencode_lib::io::traits::IDestination;
 pub struct Buffer {  pub buffer : Vec<u8>}
 
 impl Buffer {
@@ -20,13 +21,6 @@ impl IDestination for Buffer {
         self.buffer.clear();
     }
 }
-
-pub trait IDestination {
-    fn add_byte(&mut self, byte: u8);
-    fn add_bytes(&mut self, bytes: &str);
-    fn clear(&mut self);
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

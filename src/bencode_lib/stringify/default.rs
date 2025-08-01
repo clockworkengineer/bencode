@@ -1,5 +1,6 @@
 use crate::bencode_lib::nodes::node::*;
-use crate::bencode_lib::io::destinations::buffer::{Buffer, IDestination};
+use crate::bencode_lib::io::destinations::buffer::Buffer;
+use crate::bencode_lib::io::traits::IDestination;
 
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
     match node {
