@@ -1,12 +1,17 @@
 use crate::bencode_lib::io::traits::IDestination;
-pub struct Buffer {  pub buffer : Vec<u8>}
+pub struct Buffer {
+    pub buffer: Vec<u8>,
+}
 
 impl Buffer {
     pub fn new() -> Self {
         Self { buffer: vec![] }
     }
-    pub fn to_string(&self) -> String{
+    pub fn to_string(&self) -> String {
         String::from_utf8_lossy(&self.buffer).into_owned()
+    }
+    pub fn last(&self) -> Option<u8> {
+        self.buffer.last().copied()
     }
 }
 
@@ -49,5 +54,16 @@ mod tests {
         destination.clear();
         assert_eq!(destination.to_string(), "");
     }
-
+    #[test]
+    fn last_returns_none_for_empty_buffer() {
+        let buffer = Buffer::new();
+        assert_eq!(buffer.last(), None);
+    }
+    #[test]
+    fn last_returns_last_byte_for_non_empty_buffer() {
+        let mut buffer = Buffer::new();
+        buffer.buffer.push(b'A');
+        buffer.buffer.push(b'B');
+        assert_eq!(buffer.last(), Some(b'B'));
+    }
 }
