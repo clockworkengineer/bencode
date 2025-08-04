@@ -4,7 +4,7 @@ use crate::bencode_lib::io::traits::IDestination;
 
 pub struct File {
     file: StdFile,
-    path: String,
+    file_name: String,
     file_length: usize,
 }
 
@@ -12,13 +12,16 @@ impl File {
     pub fn new(path: &str) -> std::io::Result<Self> {
         Ok(Self {
             file: StdFile::create(path)?,
-            path: path.to_string(),
+            file_name: path.to_string(),
             file_length: 0
         })
     }
 
     pub fn file_length(&self) -> usize {
         self.file_length
+    }
+    pub fn file_name(&self) -> &str {
+        &self.file_name.as_str()
     }
 }
 
@@ -34,7 +37,7 @@ impl IDestination for File {
     }
 
     fn clear(&mut self) {
-        self.file = StdFile::create(&self.path).unwrap();
+        self.file = StdFile::create(&self.file_name).unwrap();
         self.file_length = 0;
     }
 }
@@ -111,6 +114,14 @@ mod tests {
         file.clear();
         assert_eq!(file.file_length(), 0);
 
+        fs::remove_file(path)?;
+        Ok(())
+    }
+    #[test]
+    fn file_name_works() -> std::io::Result<()> {
+        let path = "test_name.txt";
+        let file = File::new(path)?;
+        assert_eq!(file.file_name(), path);
         fs::remove_file(path)?;
         Ok(())
     }

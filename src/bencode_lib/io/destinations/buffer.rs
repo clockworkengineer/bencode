@@ -55,15 +55,14 @@ mod tests {
         assert_eq!(destination.to_string(), "");
     }
     #[test]
-    fn last_returns_none_for_empty_buffer() {
-        let buffer = Buffer::new();
-        assert_eq!(buffer.last(), None);
-    }
-    #[test]
-    fn last_returns_last_byte_for_non_empty_buffer() {
+    fn last_works() {
         let mut buffer = Buffer::new();
-        buffer.buffer.push(b'A');
-        buffer.buffer.push(b'B');
-        assert_eq!(buffer.last(), Some(b'B'));
+        assert_eq!(buffer.last(), None);
+        buffer.add_byte(b'1');
+        assert_eq!(buffer.last(), Some(b'1'));
+        buffer.add_byte(b'2');
+        assert_eq!(buffer.last(), Some(b'2'));
+        buffer.clear();
+        assert_eq!(buffer.last(), None);
     }
 }
