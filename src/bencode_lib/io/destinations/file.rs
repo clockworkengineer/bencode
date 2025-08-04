@@ -23,6 +23,10 @@ impl File {
     pub fn file_name(&self) -> &str {
         &self.file_name.as_str()
     }
+    pub fn close(&self) -> std::io::Result<()> {
+        Ok(())
+    }
+
 }
 
 impl IDestination for File {
@@ -153,6 +157,13 @@ mod tests {
         assert_eq!(file.last(), None);
 
         fs::remove_file(path)?;
+        Ok(())
+    }
+    #[test]
+    fn close_works() -> std::io::Result<()> {
+        let path = "test_name.txt";
+        let file = File::new(path)?;
+        file.close()?;
         Ok(())
     }
 }
