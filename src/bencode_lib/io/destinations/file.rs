@@ -137,5 +137,23 @@ mod tests {
         fs::remove_file(path)?;
         Ok(())
     }
+    #[test]
+    fn last_works() -> std::io::Result<()> {
+        let path = "test_last.txt";
+        let mut file = File::new(path)?;
+        assert_eq!(file.last(), None);
+
+        file.add_byte(b'1');
+        assert_eq!(file.last(), Some(b'1'));
+
+        file.add_byte(b'2');
+        assert_eq!(file.last(), Some(b'2'));
+
+        file.clear();
+        assert_eq!(file.last(), None);
+
+        fs::remove_file(path)?;
+        Ok(())
+    }
 }
 
