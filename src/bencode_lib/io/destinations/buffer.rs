@@ -10,9 +10,7 @@ impl Buffer {
     pub fn to_string(&self) -> String {
         String::from_utf8_lossy(&self.buffer).into_owned()
     }
-    pub fn last(&self) -> Option<u8> {
-        self.buffer.last().copied()
-    }
+
 }
 
 impl IDestination for Buffer {
@@ -24,6 +22,9 @@ impl IDestination for Buffer {
     }
     fn clear(&mut self) {
         self.buffer.clear();
+    }
+    fn last(&self) -> Option<u8> {
+        self.buffer.last().copied()
     }
 }
 #[cfg(test)]

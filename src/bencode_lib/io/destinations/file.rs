@@ -1,5 +1,5 @@
 use std::fs::File as StdFile;
-use std::io::Write;
+use std::io::{Write, Read, Seek};
 use crate::bencode_lib::io::traits::IDestination;
 
 pub struct File {
@@ -39,6 +39,18 @@ impl IDestination for File {
     fn clear(&mut self) {
         self.file = StdFile::create(&self.file_name).unwrap();
         self.file_length = 0;
+    }
+
+    fn last(&self) -> Option<u8> {
+        if self.file_length == 0 {
+            None
+        } else {
+            let mut buf = vec![0];
+            let mut file = StdFile::open(&self.file_name).unwrap();
+            file.seek(std::io::SeekFrom::End(-1)).unwrap();
+            file.read_exact(&mut buf).unwrap();
+            Some(buf[0])
+        }
     }
 }
 
