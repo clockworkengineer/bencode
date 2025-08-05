@@ -1,7 +1,7 @@
-use crate::bencode_lib::nodes::node::Node;
+use crate::bencode::nodes::node::Node;
 use std::collections::HashMap;
-use crate::bencode_lib::io::traits::ISource;
-use crate::bencode_lib::io::sources::buffer::Buffer;
+use crate::bencode::io::traits::ISource;
+use crate::bencode::io::sources::buffer::Buffer;
 
 pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
     match source.current() {
