@@ -1,4 +1,4 @@
 [workspace]
 resolver = "3"
-members=[ "examples/bencode_fibonacci", "examples/bencode_read_torrent_files","library"]
+members=[ "library"]
 

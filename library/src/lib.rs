@@ -1,1 +1,1 @@
-mod bencode;
+pub mod bencode;

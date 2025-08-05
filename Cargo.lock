@@ -10,14 +10,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bencode_fibonacci"
-version = "0.1.0"
-
-[[package]]
-name = "bencode_read_torrent_files"
-version = "0.1.0"
-
-[[package]]
 name = "bitflags"
 version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
