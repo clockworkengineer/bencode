@@ -1,4 +1,4 @@
-use crate::bencode::io::traits::IDestination;
+use crate::bencode_lib::io::traits::IDestination;
 pub struct Buffer {
     pub buffer: Vec<u8>,
 }

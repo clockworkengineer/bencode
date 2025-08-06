@@ -1,6 +1,6 @@
 use std::fs::File as StdFile;
 use std::io::{Read, Seek, SeekFrom};
-use crate::bencode::io::traits::ISource;
+use crate::bencode_lib::io::traits::ISource;
 
 pub struct File {
     file: StdFile,

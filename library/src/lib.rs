@@ -1,1 +1,1 @@
-pub mod bencode;
+pub mod bencode_lib;

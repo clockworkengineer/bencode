@@ -1,4 +1,4 @@
-use crate::bencode::io::traits::ISource;
+use crate::bencode_lib::io::traits::ISource;
 
 pub struct Buffer {  buffer : Vec<u8>, position : usize}
 
