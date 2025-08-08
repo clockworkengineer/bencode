@@ -1,5 +1,4 @@
 use crate::bencode_lib::nodes::node::*;
-use crate::bencode_lib::io::destinations::buffer::Buffer;
 use crate::bencode_lib::io::traits::IDestination;
 
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
@@ -36,31 +35,32 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
 mod tests {
     use super::*;
     use std::collections::HashMap;
+    use crate::BufferDestination;
 
     #[test]
     fn stringify_integer_works() {
-        let mut destination = Buffer::new();
+        let mut destination = BufferDestination::new();
         stringify(&make_node(32), &mut destination);
         assert_eq!(destination.to_string(), "i32e");
     }
 
     #[test]
     fn stringify_string_works() {
-        let mut destination = Buffer::new();
+        let mut destination = BufferDestination::new();
         stringify(&make_node("test"), &mut destination);
         assert_eq!(destination.to_string(), "4:test");
     }
 
     #[test]
     fn stringify_empty_list_works() {
-        let mut destination = Buffer::new();
+        let mut destination = BufferDestination::new();
         stringify(&make_node(vec![] as Vec<Node>), &mut destination);
         assert_eq!(destination.to_string(), "le");
     }
 
     #[test]
     fn stringify_list_works() {
-        let mut destination = Buffer::new();
+        let mut destination = BufferDestination::new();
         let list = vec![make_node(32), make_node("test")];
         stringify(&make_node(list), &mut destination);
         assert_eq!(destination.to_string(), "li32e4:teste");
@@ -68,14 +68,14 @@ mod tests {
 
     #[test]
     fn stringify_empty_dictionary_works() {
-        let mut destination = Buffer::new();
+        let mut destination = BufferDestination::new();
         stringify(&make_node(HashMap::new()), &mut destination);
         assert_eq!(destination.to_string(), "de");
     }
 
     #[test]
     fn stringify_dictionary_works() {
-        let mut destination = Buffer::new();
+        let mut destination = BufferDestination::new();
         let mut dict = HashMap::new();
         dict.insert(String::from("key"), make_node(32));
         stringify(&make_node(dict), &mut destination);

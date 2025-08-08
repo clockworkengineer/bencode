@@ -1,7 +1,6 @@
 use crate::bencode_lib::nodes::node::Node;
 use std::collections::HashMap;
 use crate::bencode_lib::io::traits::ISource;
-use crate::bencode_lib::io::sources::buffer::Buffer;
 
 pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
     match source.current() {
@@ -89,23 +88,24 @@ fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
 
 #[cfg(test)]
 mod tests {
+    use crate::BufferSource;
     use super::*;
 
     #[test]
     fn parse_integer_works() {
-        let mut source = Buffer::new(b"i32e");
+        let mut source = BufferSource::new(b"i32e");
         assert!(matches!(parse(&mut source), Ok(Node::Integer(32))));
     }
 
     #[test]
     fn parse_string_works() {
-        let mut source = Buffer::new(b"4:test");
+        let mut source = BufferSource::new(b"4:test");
         assert!(matches!(parse(&mut source), Ok(Node::Str(s)) if s == "test"));
     }
 
     #[test]
     fn parse_list_works() {
-        let mut source = Buffer::new(b"li32ei33ee");
+        let mut source = BufferSource::new(b"li32ei33ee");
         match parse(&mut source) {
             Ok(Node::List(list)) => {
                 assert_eq!(list.len(), 2);
@@ -118,7 +118,7 @@ mod tests {
 
     #[test]
     fn parse_dictionary_works() {
-        let mut source = Buffer::new(b"d4:testi32ee");
+        let mut source = BufferSource::new(b"d4:testi32ee");
         match parse(&mut source) {
             Ok(Node::Dictionary(dict)) => {
                 assert_eq!(dict.len(), 1);
@@ -129,25 +129,25 @@ mod tests {
     }
     #[test]
     fn parse_integer_with_error() {
-        let mut source = Buffer::new(b"i32");
+        let mut source = BufferSource::new(b"i32");
         assert!(matches!(parse(&mut source), Err(s) if s == "Unterminated integer"));
     }
 
     #[test]
     fn parse_string_with_error() {
-        let mut source = Buffer::new(b"4:tes");
+        let mut source = BufferSource::new(b"4:tes");
         assert!(matches!(parse(&mut source), Err(s) if s == "String too short"));
     }
 
     #[test]
     fn parse_list_with_error() {
-        let mut source = Buffer::new(b"li32ei33e");
+        let mut source = BufferSource::new(b"li32ei33e");
         assert!(matches!(parse(&mut source), Err(s) if s == "Unterminated list"));
     }
 
     #[test]
     fn parse_dictionary_with_error() {
-        let mut source = Buffer::new(b"d4:testi32e");
+        let mut source = BufferSource::new(b"d4:testi32e");
         assert!(matches!(parse(&mut source), Err(s) if s == "Unterminated dictionary"));
     }
 }
