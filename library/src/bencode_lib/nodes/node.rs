@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Node {
     Integer(u32),
     Str(String),
