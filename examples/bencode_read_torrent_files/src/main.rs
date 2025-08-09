@@ -1,6 +1,7 @@
 use bencode_lib::{FileDestination, FileSource, Node, parse, stringify};
 use std::path::Path;
 use std::collections::HashMap;
+use std::fs;
 
 #[derive(Debug)]
 struct TorrentFile {
@@ -62,15 +63,23 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
 }
 
 fn main() {
-    let path = Path::new("example.torrent");
-    match read_torrent_file(path) {
-        Ok(torrent) => {
-            println!("Successfully parsed torrent file:");
-            println!("Name: {}", torrent.name);
-            println!("Length: {} bytes", torrent.length);
-            println!("Piece Length: {} bytes", torrent.piece_length);
-            println!("Announce URL: {}", torrent.announce);
+    let entries = fs::read_dir("files").unwrap();
+    for entry in entries {
+        if let Ok(entry) = entry {
+            let path = entry.path();
+            if path.extension().map_or(false, |ext| ext == "torrent") {
+                println!("\nProcessing {:?}:", path);
+                match read_torrent_file(&path) {
+                    Ok(torrent) => {
+                        println!("Successfully parsed torrent file:");
+                        println!("Name: {}", torrent.name);
+                        println!("Length: {} bytes", torrent.length);
+                        println!("Piece Length: {} bytes", torrent.piece_length);
+                        println!("Announce URL: {}", torrent.announce);
+                    }
+                    Err(e) => eprintln!("Error reading torrent file: {}", e),
+                }
+            }
         }
-        Err(e) => eprintln!("Error reading torrent file: {}", e),
     }
 }
