@@ -19,7 +19,7 @@ fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
     while let Some(c) = source.current() {
         if c == 'e' {
             source.next();
-            return number.parse::<u32>()
+            return number.parse::<u64>()
                 .map(Node::Integer)
                 .map_err(|_| "Invalid integer".to_string());
         }

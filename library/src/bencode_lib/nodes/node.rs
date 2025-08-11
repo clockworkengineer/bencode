@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub enum Node {
-    Integer(u32),
+    Integer(u64),
     Str(String),
     List(Vec<Node>),
     Dictionary(HashMap<String, Node>),
@@ -15,8 +15,8 @@ impl<T: Into<Node>> From<Vec<T>> for Node {
     }
 }
 
-impl From<u32> for Node {
-    fn from(value: u32) -> Self {
+impl From<u64> for Node {
+    fn from(value: u64) -> Self {
         Node::Integer(value)
     }
 }

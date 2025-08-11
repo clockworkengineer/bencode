@@ -1,6 +1,6 @@
 use bencode_lib::{FileDestination, FileSource, Node, parse, stringify};
 use std::path::Path;
-fn read_sequence(path: &Path) -> Result<Vec<u32>, String> {
+fn read_sequence(path: &Path) -> Result<Vec<u64>, String> {
     if !path.exists() {
         return Ok(vec![1, 1]);
     }
@@ -20,12 +20,12 @@ fn read_sequence(path: &Path) -> Result<Vec<u32>, String> {
     }
 }
 
-fn calculate_next(sequence: &[u32]) -> u32 {
+fn calculate_next(sequence: &[u64]) -> u64 {
     let len = sequence.len();
     sequence[len - 1] + sequence[len - 2]
 }
 
-fn write_sequence(path: &Path, sequence: &[u32]) -> Result<(), String> {
+fn write_sequence(path: &Path, sequence: &[u64]) -> Result<(), String> {
     let list = Node::List(sequence.iter().map(|&n| Node::Integer(n)).collect());
     let  file = FileDestination::new(path.to_str().unwrap_or(""));
     match file {
