@@ -16,6 +16,8 @@ struct TorrentFile {
     comment: String,
     creation_date: u64,
     created_by: String,
+    length: u64,
+    name: String,
 }
 
 fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
@@ -47,10 +49,10 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                     _ => "UTF-8".to_string(),
                 };
 
-                let attribute: u64 = match dict.get("attribute") {
-                    Some(Node::Integer(n)) => *n as u64,
-                    _ => 0,
-                };
+                // let attribute: u64 = match dict.get("attribute") {
+                //     Some(Node::Integer(n)) => *n as u64,
+                //     _ => 0,
+                // };
 
                 let comment = match dict.get("comment") {
                     Some(Node::Str(s)) => s.clone(),
@@ -67,6 +69,47 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                     _ => String::new(),
                 };
 
+                let attribute = if dict.contains_key("info") {
+                    match dict.get("info").unwrap() {
+                        Node::Dictionary(info_dict) => {
+                            match info_dict.get("attribute") {
+                                Some(Node::Integer(n)) => *n as u64,
+                                _ => 0,
+                            }
+                        },
+                        _ => 0,
+                    }
+                } else {
+                    0
+                };
+
+                let length = if dict.contains_key("info") {
+                    match dict.get("info").unwrap() {
+                        Node::Dictionary(info_dict) => {
+                            match info_dict.get("length") {
+                                Some(Node::Integer(n)) => *n as u64,
+                                _ => 0,
+                            }
+                        },
+                        _ => 0,
+                    }
+                } else {
+                    0
+                };
+
+                let name:String = if dict.contains_key("info") {
+                    match dict.get("info").unwrap() {
+                        Node::Dictionary(info_dict) => {
+                            match info_dict.get("name") {
+                                Some(Node::Str(name)) => name.clone(),
+                                _ => String::from(""),
+                            }
+                        },
+                        _ => String::from(""),
+                    }
+                } else {
+                    String::from("")
+                };
                 Ok(TorrentFile {
                     announce,
                     announce_list,
@@ -75,6 +118,8 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                     comment,
                     creation_date,
                     created_by,
+                    length,
+                    name
                 })
             }
             _ => Err("Invalid torrent file format".to_string()),
@@ -93,7 +138,7 @@ fn main() {
                 match read_torrent_file(&path) {
                     Ok(torrent) => {
                         println!("Successfully parsed torrent file:");
-                        // println!("Name: {}", torrent.name);
+
                         // println!("Length: {} bytes", torrent.length);
                         // println!("Piece Length: {} bytes", torrent.piece_length);
                         println!("Announce URL: {}", torrent.announce);
@@ -106,6 +151,8 @@ fn main() {
                         println!("Comment: {}", torrent.comment);
                         println!("Creation Date: {}", torrent.creation_date);
                         println!("Created By: {}", torrent.created_by);
+                        println!("Length: {} bytes", torrent.length);
+                        println!("Name: {}", torrent.name);
                     }
                     Err(e) => eprintln!("Error reading torrent file: {}", e),
                 }
