@@ -14,6 +14,8 @@ struct TorrentFile {
     encoding: String,
     attribute: u64,
     comment: String,
+    creation_date: u64,
+    created_by: String,
 }
 
 fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
@@ -55,12 +57,24 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                     _ => String::new(),
                 };
 
+                let creation_date = match dict.get("creation date") {
+                    Some(Node::Integer(n)) => *n as u64,
+                    _ => 0,
+                };
+
+                let created_by = match dict.get("created by") {
+                    Some(Node::Str(s)) => s.clone(),
+                    _ => String::new(),
+                };
+
                 Ok(TorrentFile {
                     announce,
                     announce_list,
                     encoding,
                     attribute,
                     comment,
+                    creation_date,
+                    created_by,
                 })
             }
             _ => Err("Invalid torrent file format".to_string()),
@@ -90,6 +104,8 @@ fn main() {
                         println!("Encoding: {}", torrent.encoding);
                         println!("Attribute: {}", torrent.attribute);
                         println!("Comment: {}", torrent.comment);
+                        println!("Creation Date: {}", torrent.creation_date);
+                        println!("Created By: {}", torrent.created_by);
                     }
                     Err(e) => eprintln!("Error reading torrent file: {}", e),
                 }
