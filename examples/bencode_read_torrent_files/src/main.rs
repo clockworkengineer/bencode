@@ -57,7 +57,24 @@ fn get_info_string(dict: &std::collections::HashMap<String, Node>, key: &str) ->
     }
     String::new()
 }
-fn get_file_liat(dict: HashMap<String, Node>) -> Vec<FileDetails> {
+
+fn get_announce_list(dict: &HashMap<String, Node>) -> Vec<String> {
+    match dict.get("announce-list") {
+        Some(Node::List(list)) => list
+            .iter()
+            .filter_map(|item| match item {
+                Node::List(sublist) => sublist.first().and_then(|url| match url {
+                    Node::Str(s) => Some(s.clone()),
+                    _ => None,
+                }),
+                _ => None,
+            })
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+fn get_file_list(dict: &HashMap<String, Node>) -> Vec<FileDetails> {
     if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
         if let Some(Node::List(files_list)) = info_dict.get("files") {
             files_list
@@ -89,24 +106,33 @@ fn get_file_liat(dict: HashMap<String, Node>) -> Vec<FileDetails> {
         Vec::new()
     }
 }
+fn validate_required_keys(dict: &HashMap<String, Node>) -> Result<(), String> {
+    let required_keys = ["announce", "info"];
+    for key in required_keys {
+        if !dict.contains_key(key) {
+            return Err(format!("Missing required key: {}", key));
+        }
+    }
+
+    if let Some(Node::Dictionary(info)) = dict.get("info") {
+        let required_info_keys = ["name", "piece length", "pieces"];
+        for key in required_info_keys {
+            if !info.contains_key(key) {
+                return Err(format!("Missing required info key: {}", key));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
     match FileSource::new(path.to_str().unwrap()) {
         Ok(mut file) => match parse(&mut file) {
             Ok(Node::Dictionary(dict)) => {
+                validate_required_keys(&dict)?;
+
                 let announce = get_string(&dict, "announce");
-                let announce_list = match dict.get("announce-list") {
-                    Some(Node::List(list)) => list
-                        .iter()
-                        .filter_map(|item| match item {
-                            Node::List(sublist) => sublist.first().and_then(|url| match url {
-                                Node::Str(s) => Some(s.clone()),
-                                _ => None,
-                            }),
-                            _ => None,
-                        })
-                        .collect(),
-                    _ => Vec::new(),
-                };
+                let announce_list = get_announce_list(&dict);
 
                 let encoding = match dict.get("encoding") {
                     Some(Node::Str(s)) => s.clone(),
@@ -123,7 +149,7 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                 let pieces = get_info_string(&dict, "pieces");
                 let private_flag = get_info_integer(&dict, "private");
                 let source = get_info_string(&dict, "source");
-                let files = get_file_liat(dict);
+                let files = get_file_list(&dict);
 
                 Ok(TorrentFile {
                     announce,
@@ -148,8 +174,6 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
         Err(e) => Err(format!("Failed to open file: {}", e)),
     }
 }
-
-
 
 fn main() {
     let entries = fs::read_dir("files").unwrap();
