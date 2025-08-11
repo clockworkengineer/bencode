@@ -18,6 +18,8 @@ struct TorrentFile {
     created_by: String,
     length: u64,
     name: String,
+    piece_length:u64,
+    pieces: String,
 }
 
 fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
@@ -48,11 +50,6 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                     Some(Node::Str(s)) => s.clone(),
                     _ => "UTF-8".to_string(),
                 };
-
-                // let attribute: u64 = match dict.get("attribute") {
-                //     Some(Node::Integer(n)) => *n as u64,
-                //     _ => 0,
-                // };
 
                 let comment = match dict.get("comment") {
                     Some(Node::Str(s)) => s.clone(),
@@ -110,6 +107,35 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                 } else {
                     String::from("")
                 };
+
+                let piece_length = if dict.contains_key("info") {
+                    match dict.get("info").unwrap() {
+                        Node::Dictionary(info_dict) => {
+                            match info_dict.get("piece length") {
+                                Some(Node::Integer(n)) => *n as u64,
+                                _ => 0,
+                            }
+                        },
+                        _ => 0,
+                    }
+                } else {
+                    0
+                };
+
+                let pieces = if dict.contains_key("info") {
+                    match dict.get("info").unwrap() {
+                        Node::Dictionary(info_dict) => {
+                            match info_dict.get("pieces") {
+                                Some(Node::Str(s)) => s.clone(),
+                                _ => String::new(),
+                            }
+                        },
+                        _ => String::new(),
+                    }
+                } else {
+                    String::new()
+                };
+
                 Ok(TorrentFile {
                     announce,
                     announce_list,
@@ -119,7 +145,9 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                     creation_date,
                     created_by,
                     length,
-                    name
+                    name,
+                    piece_length,
+                    pieces,
                 })
             }
             _ => Err("Invalid torrent file format".to_string()),
@@ -138,9 +166,6 @@ fn main() {
                 match read_torrent_file(&path) {
                     Ok(torrent) => {
                         println!("Successfully parsed torrent file:");
-
-                        // println!("Length: {} bytes", torrent.length);
-                        // println!("Piece Length: {} bytes", torrent.piece_length);
                         println!("Announce URL: {}", torrent.announce);
                         println!("Announce List URLs:");
                         for url in &torrent.announce_list {
@@ -153,6 +178,9 @@ fn main() {
                         println!("Created By: {}", torrent.created_by);
                         println!("Length: {} bytes", torrent.length);
                         println!("Name: {}", torrent.name);
+                        println!("Piece Length: {}", torrent.piece_length);
+                        // println!("Pieces: {}", torrent.pieces);
+
                     }
                     Err(e) => eprintln!("Error reading torrent file: {}", e),
                 }
