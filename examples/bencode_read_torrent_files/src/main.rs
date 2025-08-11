@@ -20,6 +20,8 @@ struct TorrentFile {
     name: String,
     piece_length:u64,
     pieces: String,
+    private_flag: u64,
+    source: String,
 }
 
 fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
@@ -66,75 +68,31 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                     _ => String::new(),
                 };
 
-                let attribute = if dict.contains_key("info") {
-                    match dict.get("info").unwrap() {
-                        Node::Dictionary(info_dict) => {
-                            match info_dict.get("attribute") {
-                                Some(Node::Integer(n)) => *n as u64,
-                                _ => 0,
-                            }
-                        },
-                        _ => 0,
+                fn get_info_integer(dict: &std::collections::HashMap<String, Node>, key: &str) -> u64 {
+                    if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
+                        if let Some(Node::Integer(n)) = info_dict.get(key) {
+                            return *n as u64;
+                        }
                     }
-                } else {
                     0
-                };
+                }
 
-                let length = if dict.contains_key("info") {
-                    match dict.get("info").unwrap() {
-                        Node::Dictionary(info_dict) => {
-                            match info_dict.get("length") {
-                                Some(Node::Integer(n)) => *n as u64,
-                                _ => 0,
-                            }
-                        },
-                        _ => 0,
+                fn get_info_string(dict: &std::collections::HashMap<String, Node>, key: &str) -> String {
+                    if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
+                        if let Some(Node::Str(s)) = info_dict.get(key) {
+                            return s.clone();
+                        }
                     }
-                } else {
-                    0
-                };
-
-                let name:String = if dict.contains_key("info") {
-                    match dict.get("info").unwrap() {
-                        Node::Dictionary(info_dict) => {
-                            match info_dict.get("name") {
-                                Some(Node::Str(name)) => name.clone(),
-                                _ => String::from(""),
-                            }
-                        },
-                        _ => String::from(""),
-                    }
-                } else {
-                    String::from("")
-                };
-
-                let piece_length = if dict.contains_key("info") {
-                    match dict.get("info").unwrap() {
-                        Node::Dictionary(info_dict) => {
-                            match info_dict.get("piece length") {
-                                Some(Node::Integer(n)) => *n as u64,
-                                _ => 0,
-                            }
-                        },
-                        _ => 0,
-                    }
-                } else {
-                    0
-                };
-
-                let pieces = if dict.contains_key("info") {
-                    match dict.get("info").unwrap() {
-                        Node::Dictionary(info_dict) => {
-                            match info_dict.get("pieces") {
-                                Some(Node::Str(s)) => s.clone(),
-                                _ => String::new(),
-                            }
-                        },
-                        _ => String::new(),
-                    }
-                } else {
                     String::new()
-                };
+                }
+
+                let attribute = get_info_integer(&dict, "attribute");
+                let length = get_info_integer(&dict, "length");
+                let name = get_info_string(&dict, "name");
+                let piece_length = get_info_integer(&dict, "piece length");
+                let pieces = get_info_string(&dict, "pieces");
+                let private_flag = get_info_integer(&dict, "private");
+                let source = get_info_string(&dict, "source");
 
                 Ok(TorrentFile {
                     announce,
@@ -148,6 +106,8 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                     name,
                     piece_length,
                     pieces,
+                    private_flag,
+                    source
                 })
             }
             _ => Err("Invalid torrent file format".to_string()),
@@ -180,6 +140,8 @@ fn main() {
                         println!("Name: {}", torrent.name);
                         println!("Piece Length: {}", torrent.piece_length);
                         // println!("Pieces: {}", torrent.pieces);
+                        println!("Private Bit Mask: {}", torrent.private_flag);
+                        println!("Private Bit Mask: {}", torrent.source);
 
                     }
                     Err(e) => eprintln!("Error reading torrent file: {}", e),
