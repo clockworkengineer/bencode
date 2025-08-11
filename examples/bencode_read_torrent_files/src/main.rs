@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use bencode_lib::{parse, FileSource, Node};
 use std::fs;
 use std::path::Path;
@@ -56,7 +57,38 @@ fn get_info_string(dict: &std::collections::HashMap<String, Node>, key: &str) ->
     }
     String::new()
 }
-
+fn get_file_liat(dict: HashMap<String, Node>) -> Vec<FileDetails> {
+    if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
+        if let Some(Node::List(files_list)) = info_dict.get("files") {
+            files_list
+                .iter()
+                .filter_map(|file| {
+                    if let Node::Dictionary(file_dict) = file {
+                        let length = get_integer(file_dict, "length");
+                        let path = match file_dict.get("path") {
+                            Some(Node::List(path_list)) => path_list
+                                .iter()
+                                .filter_map(|p| match p {
+                                    Node::Str(s) => Some(s.clone()),
+                                    _ => None,
+                                })
+                                .collect::<Vec<String>>()
+                                .join("/"),
+                            _ => return None,
+                        };
+                        Some(FileDetails { path, length })
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        } else {
+            Vec::new()
+        }
+    } else {
+        Vec::new()
+    }
+}
 fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
     match FileSource::new(path.to_str().unwrap()) {
         Ok(mut file) => match parse(&mut file) {
@@ -91,37 +123,7 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                 let pieces = get_info_string(&dict, "pieces");
                 let private_flag = get_info_integer(&dict, "private");
                 let source = get_info_string(&dict, "source");
-
-                let files = if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
-                    if let Some(Node::List(files_list)) = info_dict.get("files") {
-                        files_list
-                            .iter()
-                            .filter_map(|file| {
-                                if let Node::Dictionary(file_dict) = file {
-                                    let length = get_integer(file_dict, "length");
-                                    let path = match file_dict.get("path") {
-                                        Some(Node::List(path_list)) => path_list
-                                            .iter()
-                                            .filter_map(|p| match p {
-                                                Node::Str(s) => Some(s.clone()),
-                                                _ => None,
-                                            })
-                                            .collect::<Vec<String>>()
-                                            .join("/"),
-                                        _ => return None,
-                                    };
-                                    Some(FileDetails { path, length })
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect()
-                    } else {
-                        Vec::new()
-                    }
-                } else {
-                    Vec::new()
-                };
+                let files = get_file_liat(dict);
 
                 Ok(TorrentFile {
                     announce,
@@ -147,6 +149,8 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
     }
 }
 
+
+
 fn main() {
     let entries = fs::read_dir("files").unwrap();
     for entry in entries {
@@ -170,7 +174,7 @@ fn main() {
                         println!("Length: {} bytes", torrent.length);
                         println!("Name: {}", torrent.name);
                         println!("Piece Length: {}", torrent.piece_length);
-                        // println!("Pieces: {}", torrent.pieces);
+                        println!("Pieces: {}", torrent.pieces.as_bytes().iter().map(|b| format!("{:02x}", b)).collect::<String>());
                         println!("Private Bit Mask: {}", torrent.private_flag);
                         println!("Source: {}", torrent.source);
                         println!("Files:");
