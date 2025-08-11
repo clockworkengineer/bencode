@@ -1,16 +1,19 @@
-use bencode_lib::{FileDestination, FileSource, Node, parse, stringify};
+use bencode_lib::{FileSource, Node, parse};
 use std::path::Path;
-use std::collections::HashMap;
 use std::fs;
 
 #[derive(Debug)]
-struct TorrentFile {
-    name: String,
+struct FileDetails  {
+    path: String,
     length: u64,
-    piece_length: u64,
-    pieces: Vec<u8>,
+}
+#[derive(Debug)]
+struct TorrentFile {
     announce: String,
-    info_hash: Vec<u8>,
+    announce_list: Vec<String>,
+    encoding: String,
+    attribute: u64,
+    comment: String,
 }
 
 fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
@@ -21,39 +24,43 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                     Some(Node::Str(s)) => s.clone(),
                     _ => return Err("Missing or invalid announce URL".to_string()),
                 };
-
-                let info = match dict.get("info") {
-                    Some(Node::Dictionary(info)) => info,
-                    _ => return Err("Missing or invalid info dictionary".to_string()),
+                
+                let announce_list = match dict.get("announce-list") {
+                    Some(Node::List(list)) => {
+                        list.iter()
+                            .filter_map(|item| match item {
+                                Node::List(sublist) => sublist.first().and_then(|url| match url {
+                                    Node::Str(s) => Some(s.clone()),
+                                    _ => None,
+                                }),
+                                _ => None,
+                            })
+                            .collect()
+                    }
+                    _ => Vec::new(),
                 };
 
-                let name = match info.get("name") {
+                let encoding = match dict.get("encoding") {
                     Some(Node::Str(s)) => s.clone(),
-                    _ => return Err("Missing or invalid name".to_string()),
+                    _ => "UTF-8".to_string(),
                 };
 
-                let length = match info.get("length") {
+                let attribute: u64 = match dict.get("attribute") {
                     Some(Node::Integer(n)) => *n as u64,
-                    _ => return Err("Missing or invalid length".to_string()),
+                    _ => 0,
                 };
 
-                let piece_length = match info.get("piece length") {
-                    Some(Node::Integer(n)) => *n as u64,
-                    _ => return Err("Missing or invalid piece length".to_string()),
-                };
-
-                let pieces = match info.get("pieces") {
-                    Some(Node::Str(s)) => s.as_bytes().to_vec(),
-                    _ => return Err("Missing or invalid pieces".to_string()),
+                let comment = match dict.get("comment") {
+                    Some(Node::Str(s)) => s.clone(),
+                    _ => String::new(),
                 };
 
                 Ok(TorrentFile {
-                    name,
-                    length,
-                    piece_length,
-                    pieces,
                     announce,
-                    info_hash: vec![], // In a real implementation, calculate SHA1 of info dict
+                    announce_list,
+                    encoding,
+                    attribute,
+                    comment,
                 })
             }
             _ => Err("Invalid torrent file format".to_string()),
@@ -72,10 +79,17 @@ fn main() {
                 match read_torrent_file(&path) {
                     Ok(torrent) => {
                         println!("Successfully parsed torrent file:");
-                        println!("Name: {}", torrent.name);
-                        println!("Length: {} bytes", torrent.length);
-                        println!("Piece Length: {} bytes", torrent.piece_length);
+                        // println!("Name: {}", torrent.name);
+                        // println!("Length: {} bytes", torrent.length);
+                        // println!("Piece Length: {} bytes", torrent.piece_length);
                         println!("Announce URL: {}", torrent.announce);
+                        println!("Announce List URLs:");
+                        for url in &torrent.announce_list {
+                            println!("  - {}", url);
+                        }
+                        println!("Encoding: {}", torrent.encoding);
+                        println!("Attribute: {}", torrent.attribute);
+                        println!("Comment: {}", torrent.comment);
                     }
                     Err(e) => eprintln!("Error reading torrent file: {}", e),
                 }
