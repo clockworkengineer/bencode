@@ -26,154 +26,159 @@ struct TorrentFile {
     files: Vec<FileDetails>,
 }
 
-fn get_integer(dict: &std::collections::HashMap<String, Node>, key: &str, default: u64) -> u64 {
-    if let Some(Node::Integer(n)) = dict.get(key) {
-        return *n as u64;
-    }
-    default
-}
-
-fn get_string(dict: &std::collections::HashMap<String, Node>, key: &str, default: &str) -> String {
-    if let Some(Node::Str(s)) = dict.get(key) {
-        return s.clone();
-    }
-    default.to_string()
-}
-
-fn get_info_integer(dict: &std::collections::HashMap<String, Node>, key: &str, default: u64) -> u64 {
-    if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
-        if let Some(Node::Integer(n)) = info_dict.get(key) {
+impl TorrentFile {
+    fn get_integer(dict: &std::collections::HashMap<String, Node>, key: &str, default: u64) -> u64 {
+        if let Some(Node::Integer(n)) = dict.get(key) {
             return *n as u64;
         }
+        default
     }
-    default
-}
 
-fn get_info_string(dict: &std::collections::HashMap<String, Node>, key: &str, default : &str) -> String {
-    if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
-        if let Some(Node::Str(s)) = info_dict.get(key) {
+    fn get_string(dict: &std::collections::HashMap<String, Node>, key: &str, default: &str) -> String {
+        if let Some(Node::Str(s)) = dict.get(key) {
             return s.clone();
         }
+        default.to_string()
     }
-    default.to_string()
-}
 
-fn get_announce_list(dict: &HashMap<String, Node>) -> Vec<String> {
-    match dict.get("announce-list") {
-        Some(Node::List(list)) => list
-            .iter()
-            .filter_map(|item| match item {
-                Node::List(sublist) => sublist.first().and_then(|url| match url {
-                    Node::Str(s) => Some(s.clone()),
-                    _ => None,
-                }),
-                _ => None,
-            })
-            .collect(),
-        _ => Vec::new(),
+    fn get_info_integer(dict: &std::collections::HashMap<String, Node>, key: &str, default: u64) -> u64 {
+        if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
+            if let Some(Node::Integer(n)) = info_dict.get(key) {
+                return *n as u64;
+            }
+        }
+        default
     }
-}
 
-fn get_file_list(dict: &HashMap<String, Node>) -> Vec<FileDetails> {
-    if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
-        if let Some(Node::List(files_list)) = info_dict.get("files") {
-            files_list
+    fn get_info_string(dict: &std::collections::HashMap<String, Node>, key: &str, default: &str) -> String {
+        if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
+            if let Some(Node::Str(s)) = info_dict.get(key) {
+                return s.clone();
+            }
+        }
+        default.to_string()
+    }
+
+    fn get_announce_list(dict: &HashMap<String, Node>) -> Vec<String> {
+        match dict.get("announce-list") {
+            Some(Node::List(list)) => list
                 .iter()
-                .filter_map(|file| {
-                    if let Node::Dictionary(file_dict) = file {
-                        let length = get_integer(file_dict, "length", 0);
-                        let path = match file_dict.get("path") {
-                            Some(Node::List(path_list)) => path_list
-                                .iter()
-                                .filter_map(|p| match p {
-                                    Node::Str(s) => Some(s.clone()),
-                                    _ => None,
-                                })
-                                .collect::<Vec<String>>()
-                                .join("/"),
-                            _ => return None,
-                        };
-                        Some(FileDetails { path, length })
-                    } else {
-                        None
-                    }
+                .filter_map(|item| match item {
+                    Node::List(sublist) => sublist.first().and_then(|url| match url {
+                        Node::Str(s) => Some(s.clone()),
+                        _ => None,
+                    }),
+                    _ => None,
                 })
-                .collect()
+                .collect(),
+            _ => Vec::new(),
+        }
+    }
+
+    fn get_file_list(dict: &HashMap<String, Node>) -> Vec<FileDetails> {
+        if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
+            if let Some(Node::List(files_list)) = info_dict.get("files") {
+                files_list
+                    .iter()
+                    .filter_map(|file| {
+                        if let Node::Dictionary(file_dict) = file {
+                            let length = Self::get_integer(file_dict, "length", 0);
+                            let path = match file_dict.get("path") {
+                                Some(Node::List(path_list)) => path_list
+                                    .iter()
+                                    .filter_map(|p| match p {
+                                        Node::Str(s) => Some(s.clone()),
+                                        _ => None,
+                                    })
+                                    .collect::<Vec<String>>()
+                                    .join("/"),
+                                _ => return None,
+                            };
+                            Some(FileDetails { path, length })
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
+            } else {
+                Vec::new()
+            }
         } else {
             Vec::new()
         }
-    } else {
-        Vec::new()
     }
-}
-fn validate_required_keys(dict: &HashMap<String, Node>) -> Result<(), String> {
-    let required_keys = ["announce", "info"];
-    for key in required_keys {
-        if !dict.contains_key(key) {
-            return Err(format!("Missing required key: {}", key));
+
+    pub fn from_file(path: &Path) -> Result<TorrentFile, String> {
+        match FileSource::new(path.to_str().unwrap()) {
+            Ok(mut file) => match parse(&mut file) {
+                Ok(Node::Dictionary(dict)) => {
+                    Self::validate_required_keys(&dict)?;
+                    Ok(TorrentFile {
+                        announce: Self::get_string(&dict, "announce", ""),
+                        announce_list: Self::get_announce_list(&dict),
+                        encoding: Self::get_string(&dict, "encoding", "UTF-8"),
+                        attribute: Self::get_info_integer(&dict, "attribute", 0),
+                        comment: Self::get_string(&dict, "comment", ""),
+                        creation_date: Self::get_integer(&dict, "creation date", 0),
+                        created_by: Self::get_string(&dict, "created by", ""),
+                        length: Self::get_info_integer(&dict, "length", 0),
+                        name: Self::get_info_string(&dict, "name", ""),
+                        piece_length: Self::get_info_integer(&dict, "piece length", 0),
+                        pieces: Self::get_info_string(&dict, "pieces", ""),
+                        private_flag: Self::get_info_integer(&dict, "private", 0),
+                        source: Self::get_info_string(&dict, "source", ""),
+                        files: Self::get_file_list(&dict),
+                    })
+                }
+                Err(s) => Err(s),
+                _ => Err("Invalid torrent file format".to_string()),
+            },
+            Err(e) => Err(format!("Failed to open file: {}", e)),
         }
     }
 
-    if let Some(Node::Dictionary(info)) = dict.get("info") {
-        let required_info_keys = ["name", "piece length", "pieces"];
-        for key in required_info_keys {
-            if !info.contains_key(key) {
-                return Err(format!("Missing required info key: {}", key));
+
+    pub fn validate_required_keys(dict: &HashMap<String, Node>) -> Result<(), String> {
+        let required_keys = ["announce", "info"];
+        for key in required_keys {
+            if !dict.contains_key(key) {
+                return Err(format!("Missing required key: {}", key));
             }
         }
-    }
-    Ok(())
-}
 
-fn print_torrent_details(torrent: &TorrentFile) {
-    println!("Successfully parsed torrent file:");
-    println!("Announce URL: {}", torrent.announce);
-    println!("Announce List URLs:");
-    for url in &torrent.announce_list {
-        println!("  - {}", url);
-    }
-    println!("Encoding: {}", torrent.encoding);
-    println!("Attribute: {}", torrent.attribute);
-    println!("Comment: {}", torrent.comment);
-    println!("Creation Date: {}", torrent.creation_date);
-    println!("Created By: {}", torrent.created_by);
-    println!("Length: {} bytes", torrent.length);
-    println!("Name: {}", torrent.name);
-    println!("Piece Length: {}", torrent.piece_length);
-    println!("Pieces: {}", torrent.pieces.as_bytes().iter().map(|b| format!("{:02x}", b)).collect::<String>());
-    println!("Private Bit Mask: {}", torrent.private_flag);
-    println!("Source: {}", torrent.source);
-    println!("Files:");
-    for file in &torrent.files {
-        println!("  - {} ({} bytes)", file.path, file.length);
-    }
-}
-fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
-    match FileSource::new(path.to_str().unwrap()) {
-        Ok(mut file) => match parse(&mut file) {
-            Ok(Node::Dictionary(dict)) => {
-                validate_required_keys(&dict)?;
-                Ok(TorrentFile {
-                    announce: get_string(&dict, "announce", ""),
-                    announce_list : get_announce_list(&dict),
-                    encoding : get_string(&dict,"encoding","UTF-8"),
-                    attribute : get_info_integer(&dict, "attribute", 0),
-                    comment: get_string(&dict, "comment", ""),
-                    creation_date : get_integer(&dict, "creation date", 0),
-                    created_by : get_string(&dict, "created by", ""),
-                    length: get_info_integer(&dict, "length", 0),
-                    name : get_info_string(&dict, "name", ""),
-                    piece_length : get_info_integer(&dict, "piece length", 0),
-                    pieces: get_info_string(&dict, "pieces", ""),
-                    private_flag :  get_info_integer(&dict, "private", 0),
-                    source : get_info_string(&dict, "source", ""),
-                    files : get_file_list(&dict),
-                })
+        if let Some(Node::Dictionary(info)) = dict.get("info") {
+            let required_info_keys = ["name", "piece length", "pieces"];
+            for key in required_info_keys {
+                if !info.contains_key(key) {
+                    return Err(format!("Missing required info key: {}", key));
+                }
             }
-            Err(s)=> Err(s),
-            _ => Err("Invalid torrent file format".to_string()),
-        },
-        Err(e) => Err(format!("Failed to open file: {}", e)),
+        }
+        Ok(())
+    }
+
+    pub fn print_details(&self) {
+        println!("Successfully parsed torrent file:");
+        println!("Announce URL: {}", self.announce);
+        println!("Announce List URLs:");
+        for url in &self.announce_list {
+            println!("  - {}", url);
+        }
+        println!("Encoding: {}", self.encoding);
+        println!("Attribute: {}", self.attribute);
+        println!("Comment: {}", self.comment);
+        println!("Creation Date: {}", self.creation_date);
+        println!("Created By: {}", self.created_by);
+        println!("Length: {} bytes", self.length);
+        println!("Name: {}", self.name);
+        println!("Piece Length: {}", self.piece_length);
+        println!("Pieces: {}", self.pieces.as_bytes().iter().map(|b| format!("{:02x}", b)).collect::<String>());
+        println!("Private Bit Mask: {}", self.private_flag);
+        println!("Source: {}", self.source);
+        println!("Files:");
+        for file in &self.files {
+            println!("  - {} ({} bytes)", file.path, file.length);
+        }
     }
 }
 
@@ -184,9 +189,9 @@ fn main() {
             let path = entry.path();
             if path.extension().map_or(false, |ext| ext == "torrent") {
                 println!("\nProcessing {:?}:", path);
-                match read_torrent_file(&path) {
+                match TorrentFile::from_file(&path) {
                     Ok(torrent) => {
-                        print_torrent_details(&torrent);
+                        torrent.print_details();
                     }
                     Err(e) => eprintln!("Error reading torrent file: {}", e),
                 }
