@@ -19,7 +19,10 @@ fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
     while let Some(c) = source.current() {
         if c == 'e' {
             source.next();
-            return number.parse::<u64>()
+            if number == "-0" {
+                return Err("Invalid integer".to_string());
+            }
+            return number.parse::<i64>()
                 .map(Node::Integer)
                 .map_err(|_| "Invalid integer".to_string());
         }
@@ -137,6 +140,18 @@ mod tests {
     fn parse_string_with_error() {
         let mut source = BufferSource::new(b"4:tes");
         assert!(matches!(parse(&mut source), Err(s) if s == "String too short"));
+    }
+
+    #[test]
+    fn parse_negative_integer_works() {
+        let mut source = BufferSource::new(b"i-32e");
+        assert!(matches!(parse(&mut source), Ok(Node::Integer(-32))));
+    }
+
+    #[test]
+    fn parse_negative_zero_fails() {
+        let mut source = BufferSource::new(b"i-0e");
+        assert!(matches!(parse(&mut source), Err(s) if s == "Invalid integer"));
     }
 
     #[test]
