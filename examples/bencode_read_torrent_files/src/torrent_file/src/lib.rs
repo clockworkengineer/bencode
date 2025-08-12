@@ -2,12 +2,13 @@ use std::collections::HashMap;
 use bencode_lib::{parse, FileSource, Node};
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct FileDetails {
     path: String,
     length: u64,
 }
-#[derive(Debug)]
+
+#[derive(Debug, PartialEq)]
 pub struct TorrentFile {
     announce: String,
     announce_list: Vec<String>,
@@ -136,7 +137,6 @@ impl TorrentFile {
         }
     }
 
-
     pub fn validate_required_keys(dict: &HashMap<String, Node>) -> Result<(), String> {
         let required_keys = ["announce", "info"];
         for key in required_keys {
@@ -178,5 +178,74 @@ impl TorrentFile {
         for file in &self.files {
             println!("  - {} ({} bytes)", file.path, file.length);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_get_integer() {
+        let mut dict = HashMap::new();
+        dict.insert("test".to_string(), Node::Integer(42));
+
+        assert_eq!(TorrentFile::get_integer(&dict, "test", 0), 42);
+        assert_eq!(TorrentFile::get_integer(&dict, "nonexistent", 100), 100);
+    }
+
+    #[test]
+    fn test_get_string() {
+        let mut dict = HashMap::new();
+        dict.insert("test".to_string(), Node::Str("value".to_string()));
+
+        assert_eq!(TorrentFile::get_string(&dict, "test", "default"), "value");
+        assert_eq!(TorrentFile::get_string(&dict, "nonexistent", "default"), "default");
+    }
+
+    #[test]
+    fn test_get_info_integer() {
+        let mut info_dict = HashMap::new();
+        info_dict.insert("attr".to_string(), Node::Integer(42));
+
+        let mut dict = HashMap::new();
+        dict.insert("info".to_string(), Node::Dictionary(info_dict));
+
+        assert_eq!(TorrentFile::get_info_integer(&dict, "attr", 0), 42);
+        assert_eq!(TorrentFile::get_info_integer(&dict, "nonexistent", 100), 100);
+    }
+
+    #[test]
+    fn test_validate_required_keys() {
+        let mut info_dict = HashMap::new();
+        info_dict.insert("name".to_string(), Node::Str("test".to_string()));
+        info_dict.insert("piece length".to_string(), Node::Integer(1));
+        info_dict.insert("pieces".to_string(), Node::Str("test".to_string()));
+
+        let mut dict = HashMap::new();
+        dict.insert("announce".to_string(), Node::Str("test".to_string()));
+        dict.insert("info".to_string(), Node::Dictionary(info_dict));
+
+        assert!(TorrentFile::validate_required_keys(&dict).is_ok());
+    }
+
+    #[test]
+    fn test_validate_required_keys_missing() {
+        let dict = HashMap::new();
+        assert!(TorrentFile::validate_required_keys(&dict).is_err());
+    }
+
+    #[test]
+    fn test_get_announce_list() {
+        let mut announce_list = Vec::new();
+        announce_list.push(Node::List(vec![Node::Str("test1".to_string())]));
+        announce_list.push(Node::List(vec![Node::Str("test2".to_string())]));
+
+        let mut dict = HashMap::new();
+        dict.insert("announce-list".to_string(), Node::List(announce_list));
+
+        let result = TorrentFile::get_announce_list(&dict);
+        assert_eq!(result, vec!["test1".to_string(), "test2".to_string()]);
     }
 }
