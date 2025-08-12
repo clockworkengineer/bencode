@@ -20,7 +20,7 @@ dependencies = [
 name = "bencode_read_torrent_files"
 version = "0.1.0"
 dependencies = [
- "bencode_lib",
+ "torrent_file",
 ]
 
 [[package]]
@@ -124,6 +124,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "torrent_file"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
 ]
 
 [[package]]
