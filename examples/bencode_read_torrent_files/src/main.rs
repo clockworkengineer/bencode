@@ -40,22 +40,22 @@ fn get_string(dict: &std::collections::HashMap<String, Node>, key: &str, default
     default.to_string()
 }
 
-fn get_info_integer(dict: &std::collections::HashMap<String, Node>, key: &str) -> u64 {
+fn get_info_integer(dict: &std::collections::HashMap<String, Node>, key: &str, default: u64) -> u64 {
     if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
         if let Some(Node::Integer(n)) = info_dict.get(key) {
             return *n as u64;
         }
     }
-    0
+    default
 }
 
-fn get_info_string(dict: &std::collections::HashMap<String, Node>, key: &str) -> String {
+fn get_info_string(dict: &std::collections::HashMap<String, Node>, key: &str, default : &str) -> String {
     if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
         if let Some(Node::Str(s)) = info_dict.get(key) {
             return s.clone();
         }
     }
-    String::new()
+    default.to_string()
 }
 
 fn get_announce_list(dict: &HashMap<String, Node>) -> Vec<String> {
@@ -157,16 +157,16 @@ fn read_torrent_file(path: &Path) -> Result<TorrentFile, String> {
                     announce: get_string(&dict, "announce", ""),
                     announce_list : get_announce_list(&dict),
                     encoding : get_string(&dict,"encoding","UTF-8"),
-                    attribute : get_info_integer(&dict, "attribute"),
+                    attribute : get_info_integer(&dict, "attribute", 0),
                     comment: get_string(&dict, "comment", ""),
                     creation_date : get_integer(&dict, "creation date", 0),
                     created_by : get_string(&dict, "created by", ""),
-                    length: get_info_integer(&dict, "length"),
-                    name : get_info_string(&dict, "name"),
-                    piece_length : get_info_integer(&dict, "piece length"),
-                    pieces: get_info_string(&dict, "pieces"),
-                    private_flag :  get_info_integer(&dict, "private"),
-                    source : get_info_string(&dict, "source"),
+                    length: get_info_integer(&dict, "length", 0),
+                    name : get_info_string(&dict, "name", ""),
+                    piece_length : get_info_integer(&dict, "piece length", 0),
+                    pieces: get_info_string(&dict, "pieces", ""),
+                    private_flag :  get_info_integer(&dict, "private", 0),
+                    source : get_info_string(&dict, "source", ""),
                     files : get_file_list(&dict),
                 })
             }
