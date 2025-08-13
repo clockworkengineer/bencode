@@ -230,10 +230,10 @@ mod tests {
     }
     #[test]
     fn make_a_string_node_works() {
-        let node = make_node("i32e");
+        let node = make_node("test");
         match node {
             Node::Str(string) => {
-                assert_eq!(string.as_str(), "i32e");
+                assert_eq!(string.as_str(), "test");
             }
             _ => {
                 assert_eq!(false, true);
@@ -295,7 +295,7 @@ mod tests {
     }
 
     #[test]
-    fn kv_array_literal_to_dictionary_node_works() {
+    fn array_literal_to_dictionary_node_works() {
         let node = make_node([("a", 1), ("b", 2)]);
         match node {
             Node::Dictionary(map) => {
