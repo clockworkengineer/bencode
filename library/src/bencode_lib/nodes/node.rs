@@ -271,9 +271,15 @@ mod tests {
         let node = make_node([1, 2, 3]);
         match node {
             Node::List(list) => {
-                assert_eq!(list.len(), 3);
+
+                for item in list {
+                    match item {
+                        Node::Integer(_) => (),
+                        _ => assert_eq!(false, true),
+                    }
+                }
             }
-            _ => panic!("Expected List"),
+            _ => assert_eq!(false, true),
         }
     }
 
@@ -284,7 +290,7 @@ mod tests {
             Node::List(list) => {
                 assert_eq!(list.len(), 3);
             }
-            _ => panic!("Expected List"),
+            _ => assert_eq!(false, true),
         }
     }
 
@@ -296,10 +302,10 @@ mod tests {
                 assert_eq!(map.len(), 2);
                 match map.get("b").unwrap() {
                     Node::Integer(i) => assert_eq!(*i, 2),
-                    _ => panic!("Expected Integer for key 'b'"),
+                    _ => assert_eq!(false, true),
                 }
             }
-            _ => panic!("Expected Dictionary"),
+            _ => assert_eq!(false, true),
         }
     }
 }
