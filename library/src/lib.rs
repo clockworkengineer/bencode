@@ -1,5 +1,6 @@
 pub mod bencode_lib;
 
+pub use bencode_lib::misc::get_version;
 pub use bencode_lib::io::sources::buffer::Buffer as BufferSource;
 pub use bencode_lib::io::destinations::buffer::Buffer as BufferDestination;
 pub use bencode_lib::io::sources::file::File as FileSource;
