@@ -24,7 +24,9 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
         }
         Node::Dictionary(items) => {
             destination.add_byte(b'{');
-            for (index, (key, value)) in items.iter().enumerate() {
+            let mut sorted: Vec<_> = items.iter().collect();
+            sorted.sort_by(|a, b| a.0.cmp(b.0));
+            for (index, (key, value)) in sorted.iter().enumerate() {
                 if index > 0 {
                     destination.add_byte(b',');
                 }

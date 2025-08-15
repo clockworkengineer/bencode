@@ -29,7 +29,9 @@ fn write_node(node: &Node, level: usize, destination: &mut dyn IDestination) {
                 destination.add_bytes("{}")
             } else {
                 destination.add_bytes("\n");
-                for (key, value) in dict {
+                let mut sorted: Vec<_> = dict.iter().collect();
+                sorted.sort_by(|a, b| a.0.cmp(b.0));
+                for (key, value) in sorted {
                     write_indent(level + 1, destination);
                     destination.add_bytes(&format!("{}: ", String::from_utf8_lossy(key.as_ref())));
                     write_node(value, level + 1, destination);

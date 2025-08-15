@@ -73,6 +73,7 @@ fn parse_list(source: &mut dyn ISource) -> Result<Node, String> {
 fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'd'
     let mut dict = HashMap::new();
+    let mut last_key = String::new();
     while let Some(c) = source.current() {
         if c == 'e' {
             source.next();
@@ -80,6 +81,10 @@ fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
         }
         match parse_string(source)? {
             Node::Str(key) => {
+                if key <= last_key {
+                    return Err("Dictionary keys must be in order".to_string());
+                }
+                last_key = key.clone();
                 let value = parse(source)?;
                 dict.insert(key, value);
             }
@@ -164,5 +169,11 @@ mod tests {
     fn parse_dictionary_with_error() {
         let mut source = BufferSource::new(b"d4:testi32e");
         assert!(matches!(parse(&mut source), Err(s) if s == "Unterminated dictionary"));
+    }
+
+    #[test]
+    fn parse_dictionary_with_unordered_keys_fails() {
+        let mut source = BufferSource::new(b"d3:bbci32e3:abci42ee");
+        assert!(matches!(parse(&mut source), Err(s) if s == "Dictionary keys must be in order"));
     }
 }
