@@ -2,9 +2,9 @@ use crate::bencode_lib::nodes::node::*;
 use crate::bencode_lib::io::traits::IDestination;
 
 fn write_indent(level: usize, destination: &mut dyn IDestination) {
-    for _ in 0..level {
-        destination.add_bytes("  ");
-    }
+        for _ in 1..level {
+            destination.add_bytes("  ");
+        }
 }
 
 fn write_node(node: &Node, level: usize, destination: &mut dyn IDestination) {

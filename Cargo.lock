@@ -31,6 +31,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bencode_torrent_to_yaml"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
 name = "bitflags"
 version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
