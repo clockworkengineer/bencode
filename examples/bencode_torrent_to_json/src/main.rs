@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::Path;
-use bencode_lib::{FileDestination, FileSource, Node, parse, stringify, BufferDestination, to_json};
+use bencode_lib::{FileSource, parse, BufferDestination, to_json};
 
 fn get_torrent_files() -> Vec<String> {
     let files_dir = Path::new("files");
