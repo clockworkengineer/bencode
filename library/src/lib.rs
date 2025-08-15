@@ -9,4 +9,5 @@ pub use bencode_lib::nodes::node::Node as Node;
 
 pub use bencode_lib::stringify::default::stringify as stringify;
 pub use bencode_lib::parser::default::parse as parse;
+pub use bencode_lib::stringify::json::stringify as to_json;
 

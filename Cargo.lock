@@ -26,6 +26,9 @@ dependencies = [
 [[package]]
 name = "bencode_torrent_to_json"
 version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
 
 [[package]]
 name = "bitflags"
