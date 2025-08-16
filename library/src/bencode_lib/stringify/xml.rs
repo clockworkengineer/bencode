@@ -31,6 +31,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
             }
             destination.add_bytes("</dictionary>");
         }
+        Node::None => {}
     }
 }
 

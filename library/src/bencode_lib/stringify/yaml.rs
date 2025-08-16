@@ -39,6 +39,7 @@ fn write_node(node: &Node, level: usize, destination: &mut dyn IDestination) {
                 }
             }
         }
+        _ => destination.add_bytes("Unknown"),
     }
 }
 

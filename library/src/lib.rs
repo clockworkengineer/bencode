@@ -12,7 +12,7 @@ pub use bencode_lib::io::destinations::file::File as FileDestination;
 pub use bencode_lib::nodes::node::Node as Node;
 
 pub use bencode_lib::stringify::default::stringify as stringify;
-pub use bencode_lib::parser::default::parse as parse;
+pub use bencode_lib::parser::non_recursive::parse as parse;
 pub use bencode_lib::stringify::json::stringify as to_json;
 pub use bencode_lib::stringify::yaml::stringify as to_yaml;
 pub use bencode_lib::stringify::xml::stringify as to_xml;

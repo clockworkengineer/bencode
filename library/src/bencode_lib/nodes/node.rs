@@ -6,6 +6,7 @@ pub enum Node {
     Str(String),
     List(Vec<Node>),
     Dictionary(HashMap<String, Node>),
+    None,
 }
 
 impl<T: Into<Node>> From<Vec<T>> for Node {

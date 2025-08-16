@@ -28,6 +28,9 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
             }
             destination.add_byte(b'e');
         }
+        Node::None => {
+            // Do nothing for None nodes or handle as appropriate
+        }
     }
 }
 

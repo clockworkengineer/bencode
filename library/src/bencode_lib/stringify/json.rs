@@ -37,6 +37,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
             }
             destination.add_byte(b'}');
         }
+        _ => {}
     }
 }
 
