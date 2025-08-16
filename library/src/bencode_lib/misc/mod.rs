@@ -8,6 +8,6 @@ mod tests {
 
     #[test]
     fn test_get_version() {
-        assert_eq!(get_version(), env!("CARGO_PKG_VERSION"));
+        assert_eq!(get_version(), "0.1.0");
     }
 }
