@@ -1,14 +1,66 @@
+use std::fs;
+use std::path::Path;
+
 /// Returns the current version of the package as specified in Cargo.toml
 pub fn get_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
+/// Writes bencode string to a file
+pub fn write_bencode_file(path: &str, content: &str) -> Result<(), std::io::Error> {
+    fs::write(Path::new(path), content)
+}
+
+/// Reads bencode string from a file
+pub fn read_bencode_file(path: &str) -> Result<String, std::io::Error> {
+    fs::read_to_string(Path::new(path))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::File;
+    use std::io::Write;
 
     #[test]
     fn test_get_version() {
         assert_eq!(get_version(), "0.1.0");
+    }
+
+    #[test]
+    fn test_read_bencode_file_success() {
+        let test_content = "d8:announce15:http://test.come";
+        let test_file = "test.torrent";
+
+        File::create(test_file)
+            .and_then(|mut file| file.write_all(test_content.as_bytes()))
+            .expect("Failed to create test file");
+
+        let result = read_bencode_file(test_file);
+        fs::remove_file(test_file).expect("Failed to cleanup test file");
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), test_content);
+    }
+
+    #[test]
+    fn test_read_bencode_file_error() {
+        let result = read_bencode_file("nonexistent.torrent");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_write_bencode_file() {
+        let test_content = "d8:announce15:http://test.come";
+        let test_file = "test_write.torrent";
+
+        let write_result = write_bencode_file(test_file, test_content);
+        assert!(write_result.is_ok());
+
+        let read_result = read_bencode_file(test_file);
+        fs::remove_file(test_file).expect("Failed to cleanup test file");
+
+        assert!(read_result.is_ok());
+        assert_eq!(read_result.unwrap(), test_content);
     }
 }
