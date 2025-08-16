@@ -12,3 +12,4 @@ pub use bencode_lib::stringify::default::stringify as stringify;
 pub use bencode_lib::parser::default::parse as parse;
 pub use bencode_lib::stringify::json::stringify as to_json;
 pub use bencode_lib::stringify::yaml::stringify as to_yaml;
+pub use bencode_lib::stringify::xml::stringify as to_xml;
