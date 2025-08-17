@@ -1,7 +1,18 @@
+//! Default parser implementation for bencode format.
+//! Provides functionality to parse bencode-encoded data into Node structures.
+
 use crate::bencode_lib::nodes::node::Node;
 use std::collections::HashMap;
 use crate::bencode_lib::io::traits::ISource;
 
+/// Parses bencode data from the given source into a Node structure.
+/// Handles integers, strings, lists, and dictionaries based on their prefix character.
+///
+/// # Arguments
+/// * `source` - The source containing bencode-encoded data
+///
+/// # Returns
+/// * `Result<Node, String>` - Parsed Node or error message
 pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
     match source.current() {
         Some('i') => parse_integer(source),
@@ -13,6 +24,14 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
     }
 }
 
+/// Parses an integer value from the source, expecting format 'i<number>e'.
+/// Handles both positive and negative integers, rejecting invalid formats like '-0'.
+///
+/// # Arguments
+/// * `source` - The source containing the integer to parse
+///
+/// # Returns
+/// * `Result<Node, String>` - Integer Node or error message
 fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'i'
     let mut number = String::new();
@@ -32,6 +51,14 @@ fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
     Err("Unterminated integer".to_string())
 }
 
+/// Parses a string value from the source, expecting format '<length>:<string>'.
+/// Validates the string length and ensures the full string content is available.
+///
+/// # Arguments
+/// * `source` - The source containing the string to parse
+///
+/// # Returns
+/// * `Result<Node, String>` - String Node or error message
 fn parse_string(source: &mut dyn ISource) -> Result<Node, String> {
     let mut length = String::new();
     while let Some(c) = source.current() {
@@ -57,6 +84,14 @@ fn parse_string(source: &mut dyn ISource) -> Result<Node, String> {
     Ok(Node::Str(string))
 }
 
+/// Parses a list from the source, expecting format 'l<elements>e'.
+/// Recursively parses all elements until the end marker is found.
+///
+/// # Arguments
+/// * `source` - The source containing the list to parse
+///
+/// # Returns
+/// * `Result<Node, String>` - List Node or error message
 fn parse_list(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'l'
     let mut list = Vec::new();
@@ -70,6 +105,14 @@ fn parse_list(source: &mut dyn ISource) -> Result<Node, String> {
     Err("Unterminated list".to_string())
 }
 
+/// Parses a dictionary from the source, expecting format 'd<key><value>...e'.
+/// Ensures keys are strings and are in sorted order.
+///
+/// # Arguments
+/// * `source` - The source containing the dictionary to parse
+///
+/// # Returns
+/// * `Result<Node, String>` - Dictionary Node or error message
 fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'd'
     let mut dict = HashMap::new();

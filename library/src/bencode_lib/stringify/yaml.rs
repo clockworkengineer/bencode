@@ -1,16 +1,33 @@
+//! YAML serialization functionality for Bencode nodes.
+//! Provides methods to convert Bencode data structures into YAML formatted output.
+
 use crate::bencode_lib::nodes::node::*;
 use crate::bencode_lib::io::traits::IDestination;
 
+/// Writes the specified number of indentation spaces to the destination.
+///
+/// # Arguments
+/// * `level` - The indentation level (number of 2-space indents)
+/// * `destination` - The output destination to write to
 fn write_indent(level: usize, destination: &mut dyn IDestination) {
         for _ in 1..level {
             destination.add_bytes("  ");
         }
 }
 
+/// Recursively writes a Bencode node to the destination in YAML format.
+///
+/// # Arguments
+/// * `node` - The Bencode node to serialize
+/// * `level` - Current indentation level
+/// * `destination` - The output destination to write to
 fn write_node(node: &Node, level: usize, destination: &mut dyn IDestination) {
     match node {
+        // Write integer values directly
         Node::Integer(n) => destination.add_bytes(&n.to_string()),
+        // Write strings with quotes and proper UTF-8 encoding
         Node::Str(s) => destination.add_bytes(&format!("\"{}\"", String::from_utf8_lossy(s.as_ref()))),
+        // Write lists with proper YAML array formatting
         Node::List(items) => {
             if items.is_empty() {
                 destination.add_bytes("[]")
@@ -24,6 +41,7 @@ fn write_node(node: &Node, level: usize, destination: &mut dyn IDestination) {
                 }
             }
         }
+        // Write dictionaries with proper YAML mapping format
         Node::Dictionary(dict) => {
             if dict.is_empty() {
                 destination.add_bytes("{}")
@@ -39,10 +57,16 @@ fn write_node(node: &Node, level: usize, destination: &mut dyn IDestination) {
                 }
             }
         }
+        // Handle unknown/unsupported node types
         _ => destination.add_bytes("unknown"),
     }
 }
 
+/// Converts a Bencode node to YAML format and writes it to the destination.
+///
+/// # Arguments
+/// * `node` - The root Bencode node to serialize
+/// * `destination` - The output destination to write the YAML to
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
     write_node(node, 0, destination);
 }

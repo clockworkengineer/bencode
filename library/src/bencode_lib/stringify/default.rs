@@ -1,16 +1,27 @@
+//! Module providing functionality to convert bencode nodes into their string representation.
+//! Implements the bencode encoding rules for different node types.
+
 use crate::bencode_lib::nodes::node::*;
 use crate::bencode_lib::io::traits::IDestination;
 
+/// Converts a bencode Node into its string representation and writes it to the destination.
+///
+/// # Arguments
+/// * `node` - The bencode node to stringify
+/// * `destination` - The destination to write the string representation to
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
     match node {
+        // Handle integer nodes by formatting as "i<value>e"
         Node::Integer(value) => {
             let s = format!("i{}e", value);
             destination.add_bytes(s.as_str());
         }
+        // Handle string nodes by formatting as "<length>:<value>"
         Node::Str(value) => {
             let s = format!("{}:{}", value.len(), value);
             destination.add_bytes(s.as_str());
         }
+        // Handle list nodes by wrapping items with 'l' and 'e' markers
         Node::List(items) => {
             destination.add_byte(b'l');
             for item in items {
@@ -18,6 +29,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
             }
             destination.add_byte(b'e');
         }
+        // Handle dictionary nodes by wrapping sorted key-value pairs with 'd' and 'e' markers
         Node::Dictionary(items) => {
             destination.add_byte(b'd');
             let mut sorted: Vec<_> = items.iter().collect();
@@ -28,6 +40,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
             }
             destination.add_byte(b'e');
         }
+        // Skip None nodes as they don't have a string representation
         Node::None => {
             // Do nothing for None nodes or handle as appropriate
         }

@@ -1,17 +1,30 @@
 use std::fs;
 use std::path::Path;
 
-/// Returns the current version of the package as specified in Cargo.toml
+/// Returns the current version of the package as specified in Cargo.toml.
+/// Uses CARGO_PKG_VERSION environment variable that is set during compilation
+/// from the version field in Cargo.toml.
 pub fn get_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
 /// Writes bencode string to a file
+///
+/// # Arguments
+/// * `path` - The file path where the content will be written
+/// * `content` - The bencode string content to write to the file
 pub fn write_bencode_file(path: &str, content: &str) -> Result<(), std::io::Error> {
     fs::write(Path::new(path), content)
 }
 
 /// Reads bencode string from a file
+///
+/// # Arguments
+/// * `path` - The file path to read from
+///
+/// # Returns
+/// * `Ok(String)` - The content of the file as a string if successful
+/// * `Err(std::io::Error)` - The error if reading fails
 pub fn read_bencode_file(path: &str) -> Result<String, std::io::Error> {
     fs::read_to_string(Path::new(path))
 }

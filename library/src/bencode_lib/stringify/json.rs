@@ -1,12 +1,19 @@
 use crate::bencode_lib::nodes::node::*;
 use crate::bencode_lib::io::traits::IDestination;
 
+/// Converts a Node structure into a JSON string representation and writes it to the given destination.
+/// Handles different node types (Integer, String, List, Dictionary) according to JSON format rules.
+///
+/// # Arguments
+/// * `node` - The Node structure to convert
+/// * `destination` - The destination to write the JSON output to
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
     
     match node {
         Node::Integer(value) => {
             destination.add_bytes(&value.to_string());
         }
+        // Format string value as JSON by wrapping it in double quotes
         Node::Str(value) => {
             destination.add_byte(b'"');
             destination.add_bytes(value);

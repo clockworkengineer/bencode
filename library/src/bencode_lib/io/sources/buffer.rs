@@ -1,20 +1,40 @@
 use crate::bencode_lib::io::traits::ISource;
 
-pub struct Buffer {  buffer : Vec<u8>, position : usize}
+/// A memory buffer implementation for reading bencode data from bytes.
+/// Provides functionality to traverse and read byte content from memory.
+pub struct Buffer {
+    /// Internal vector storing the raw bytes
+    buffer: Vec<u8>,
+    /// Current reading position in the buffer
+    position: usize,
+}
 
 impl Buffer {
+    /// Creates a new Buffer instance with the specified byte slice.
+    ///
+    /// # Arguments
+    /// * `to_add` - The byte slice to initialize the buffer with
+    ///
+    /// # Returns
+    /// A new Buffer containing the provided bytes
     pub fn new(to_add: &[u8]) -> Self {
         Self { buffer : to_add.to_vec(), position: 0 }
     }
-    pub fn to_string(&self) -> String{
+    /// Converts the buffer content to a String.
+    ///
+    /// # Returns
+    /// A String containing UTF-8 interpretation of the buffer bytes.
+    pub fn to_string(&self) -> String {
         String::from_utf8_lossy(&self.buffer).into_owned()
     }
 }
 
 impl ISource for Buffer {
+    /// Moves to the next character in the buffer
     fn next(&mut self) {
         self.position += 1;
     }
+    /// Returns the current character at the buffer position
     fn current(&mut self) -> Option<char> {
         if self.more() {
             Some(self.buffer[self.position] as char)
@@ -22,9 +42,11 @@ impl ISource for Buffer {
             None
         }
     }
+    /// Checks if there are more characters to read
     fn more(&mut self) -> bool {
         self.position < self.buffer.len()
     }
+    /// Resets the buffer position to the start
     fn reset(&mut self) {
         self.position = 0;
     }

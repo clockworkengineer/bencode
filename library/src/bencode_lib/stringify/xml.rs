@@ -1,19 +1,28 @@
 use crate::bencode_lib::nodes::node::*;
 use crate::bencode_lib::io::traits::IDestination;
 
+/// Converts a bencode Node into XML format and writes it to the given destination.
+/// Each node type is wrapped in appropriate XML tags based on its type.
+///
+/// # Arguments
+/// * `node` - The bencode Node to convert
+/// * `destination` - The destination to write the XML output to
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
     match node {
         Node::Str(value) => {
+            // Wrap string value in <string> tags
             destination.add_bytes("<string>");
             destination.add_bytes(value);
             destination.add_bytes("</string>");
         }
         Node::Integer(value) => {
+            // Wrap integer value in <integer> tags
             destination.add_bytes("<integer>");
             destination.add_bytes(&value.to_string());
             destination.add_bytes("</integer>");
         }
         Node::List(items) => {
+            // Create list container and recursively stringify each item
             destination.add_bytes("<list>");
             for item in items {
                 stringify(item, destination);
@@ -21,6 +30,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
             destination.add_bytes("</list>");
         }
         Node::Dictionary(items) => {
+            // Create dictionary container with key-value pair items
             destination.add_bytes("<dictionary>");
             for (key, value) in items {
                 destination.add_bytes("<item><key>");

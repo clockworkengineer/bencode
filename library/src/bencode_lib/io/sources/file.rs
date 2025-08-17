@@ -2,12 +2,23 @@ use std::fs::File as StdFile;
 use std::io::{Read, Seek, SeekFrom};
 use crate::bencode_lib::io::traits::ISource;
 
+/// A file-based implementation for reading bencode data from disk.
+/// Provides functionality to read and traverse file content byte by byte.
 pub struct File {
+    /// Internal file handle for reading operations
     file: StdFile,
+    /// Current byte being read from the file
     current_byte: Option<u8>,
 }
 
 impl File {
+    /// Creates a new File instance from the specified path.
+    ///
+    /// # Arguments
+    /// * `path` - The path to the file to read from
+    ///
+    /// # Returns
+    /// A Result containing either the new File instance or an IO error
     pub fn new(path: &str) -> std::io::Result<Self> {
         let mut file = StdFile::open(path)?;
         let mut current_byte = [0u8; 1];
@@ -21,6 +32,7 @@ impl File {
 }
 
 impl ISource for File {
+    /// Moves to the next byte in the file
     fn next(&mut self) {
         let mut byte = [0u8; 1];
         self.current_byte = if self.file.read(&mut byte).unwrap_or(0) == 1 {
@@ -30,14 +42,17 @@ impl ISource for File {
         };
     }
 
+    /// Returns the current byte as a character
     fn current(&mut self) -> Option<char> {
         self.current_byte.map(|b| b as char)
     }
 
+    /// Checks if there are more bytes to read
     fn more(&mut self) -> bool {
         self.current_byte.is_some()
     }
 
+    /// Resets the file position to the start
     fn reset(&mut self) {
         if let Ok(_) = self.file.seek(SeekFrom::Start(0)) {
             let mut byte = [0u8; 1];

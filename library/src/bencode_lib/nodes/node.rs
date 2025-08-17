@@ -1,38 +1,49 @@
 use std::collections::HashMap;
 
+/// A node in the bencode data structure that can represent different types of values.
 #[derive(Clone, Debug)]
 pub enum Node {
+    /// Represents a 64-bit signed integer value
     Integer(i64),
+    /// Represents a string value
     Str(String),
+    /// Represents a list of other nodes
     List(Vec<Node>),
+    /// Represents a dictionary/map of string keys to node values
     Dictionary(HashMap<String, Node>),
+    /// Represents an empty or uninitialized node
     None,
 }
 
+/// Converts a vector of values into a List node
 impl<T: Into<Node>> From<Vec<T>> for Node {
     fn from(value: Vec<T>) -> Self {
         Node::List(value.into_iter().map(|x| x.into()).collect())
     }
 }
 
+/// Converts an integer into an Integer node
 impl From<i64> for Node {
     fn from(value: i64) -> Self {
         Node::Integer(value)
     }
 }
 
+/// Converts a string slice into a Str node
 impl From<&str> for Node {
     fn from(value: &str) -> Self {
         Node::Str(String::from(value))
     }
 }
 
+/// Converts a String into a Str node
 impl From<String> for Node {
     fn from(value: String) -> Self {
         Node::Str(value)
     }
 }
 
+/// Converts a HashMap into a Dictionary node
 impl From<HashMap<String, Node>> for Node {
     fn from(value: HashMap<String, Node>) -> Self {
         Node::Dictionary(value)
@@ -65,6 +76,7 @@ where
     }
 }
 
+/// Helper function to create a Node from any value that can be converted into a Node
 pub fn make_node<T>(value: T) -> Node
 where
     T: Into<Node>,

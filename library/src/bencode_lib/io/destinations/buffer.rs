@@ -1,12 +1,24 @@
 use crate::bencode_lib::io::traits::IDestination;
+/// A memory buffer implementation for storing encoded bencode data as bytes.
+/// Provides functionality to write and manipulate byte content in memory.
 pub struct Buffer {
+    /// Internal vector storing the raw bytes
     pub buffer: Vec<u8>,
 }
 
 impl Buffer {
+    /// Creates a new empty Buffer instance.
+    ///
+    /// # Returns
+    /// A new Buffer with an empty internal byte vector.
     pub fn new() -> Self {
         Self { buffer: vec![] }
     }
+
+    /// Converts the buffer content to a String.
+    ///
+    /// # Returns
+    /// A String containing UTF-8 interpretation of the buffer bytes.
     pub fn to_string(&self) -> String {
         String::from_utf8_lossy(&self.buffer).into_owned()
     }
@@ -14,15 +26,22 @@ impl Buffer {
 }
 
 impl IDestination for Buffer {
+    /// Adds a single byte to the end of the buffer.
     fn add_byte(&mut self, byte: u8) {
         self.buffer.push(byte);
     }
+
+    /// Adds multiple bytes from a string slice to the buffer.
     fn add_bytes(&mut self, bytes: &str) {
         self.buffer.extend_from_slice(bytes.as_bytes());
     }
+
+    /// Clears all content from the buffer.
     fn clear(&mut self) {
         self.buffer.clear();
     }
+
+    /// Returns the last byte in the buffer, if any.
     fn last(&self) -> Option<u8> {
         self.buffer.last().copied()
     }

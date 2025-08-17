@@ -1,10 +1,18 @@
-#[cfg(test)]
-use crate::bencode_lib::io::sources::buffer::Buffer;
+//! Non-recursive bencode parser implementation that uses a stack-based approach
+//! to handle nested data structures without recursion.
 
 use crate::bencode_lib::nodes::node::Node;
 use std::collections::HashMap;
 use crate::bencode_lib::io::traits::ISource;
 
+/// Parses bencode data from the given source using a non-recursive, stack-based approach.
+///
+/// # Arguments
+/// * `source` - The source containing bencode-encoded data to parse
+///
+/// # Returns
+/// * `Ok(Node)` - Successfully parsed bencode data as a Node
+/// * `Err(String)` - Error message if parsing fails
 pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
     let mut stack: Vec<(Node, usize)> = Vec::new();
     let mut current_string = String::new();
@@ -101,6 +109,15 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
     }
 }
 
+/// Handles adding a value to the current container (list or dictionary) on top of the stack.
+///
+/// # Arguments
+/// * `stack` - The stack of nested containers being built
+/// * `value` - The value to add to the current container
+///
+/// # Returns
+/// * `Ok(())` - Value was successfully added
+/// * `Err(String)` - Error message if the value couldn't be added
 fn handle_value(stack: &mut Vec<(Node, usize)>, value: Node) -> Result<(), String> {
     let last = stack.last_mut().unwrap();
     match last.0 {
@@ -131,6 +148,7 @@ fn handle_value(stack: &mut Vec<(Node, usize)>, value: Node) -> Result<(), Strin
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bencode_lib::io::sources::buffer::Buffer;
 
     #[test]
     fn test_parse_integer() {
