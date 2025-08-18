@@ -20,7 +20,7 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
         Some('l') => parse_list(source),
         Some('d') => parse_dictionary(source),
         Some('0'..='9') => parse_string(source),
-        Some(c) => Err(format!("Unexpected character: {}", c)),
+        Some(c) => Err(unexpected_character(c)),
         None => Err(ERR_EMPTY_INPUT
             .to_string())
     }
