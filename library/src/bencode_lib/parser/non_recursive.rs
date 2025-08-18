@@ -4,6 +4,7 @@
 use crate::bencode_lib::nodes::node::Node;
 use std::collections::HashMap;
 use crate::bencode_lib::io::traits::ISource;
+use crate::bencode_lib::error::messages::*;
 
 /// Parses bencode data from the given source using a non-recursive, stack-based approach.
 ///
@@ -34,7 +35,7 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
                 }
                 source.next();
                 let value = current_number.parse::<i64>()
-                    .map_err(|_| "Invalid integer".to_string())?;
+                    .map_err(|_| ERR_INVALID_INTEGER.to_string())?;
                 current_number.clear();
 
                 if stack.is_empty() {
@@ -75,7 +76,7 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
                 source.next();
 
                 let length = current_string.parse::<usize>()
-                    .map_err(|_| "Invalid string length".to_string())?;
+                    .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())?;
                 current_string.clear();
 
                 for _ in 0..length {
@@ -103,7 +104,8 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
     }
 
     if stack.is_empty() {
-        Err("Empty input".to_string())
+        Err(ERR_EMPTY_INPUT
+            .to_string())
     } else {
         Err("Incomplete input".to_string())
     }

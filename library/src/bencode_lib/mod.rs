@@ -11,3 +11,4 @@ pub mod parser;
 pub mod stringify;
 /// Module containing utility functions and helper methods
 pub mod misc;
+pub mod error;

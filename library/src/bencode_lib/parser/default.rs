@@ -4,6 +4,7 @@
 use crate::bencode_lib::nodes::node::Node;
 use std::collections::HashMap;
 use crate::bencode_lib::io::traits::ISource;
+use crate::bencode_lib::error::messages::*;
 
 /// Parses bencode data from the given source into a Node structure.
 /// Handles integers, strings, lists, and dictionaries based on their prefix character.
@@ -20,7 +21,8 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
         Some('d') => parse_dictionary(source),
         Some('0'..='9') => parse_string(source),
         Some(c) => Err(format!("Unexpected character: {}", c)),
-        None => Err("Empty input".to_string())
+        None => Err(ERR_EMPTY_INPUT
+            .to_string())
     }
 }
 
@@ -39,16 +41,16 @@ fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
         if c == 'e' {
             source.next();
             if number == "-0" {
-                return Err("Invalid integer".to_string());
+                return Err(ERR_INVALID_INTEGER.to_string());
             }
             return number.parse::<i64>()
                 .map(Node::Integer)
-                .map_err(|_| "Invalid integer".to_string());
+                .map_err(|_| ERR_INVALID_INTEGER.to_string());
         }
         number.push(c);
         source.next();
     }
-    Err("Unterminated integer".to_string())
+    Err(ERR_UNTERMINATED_INTEGER.to_string())
 }
 
 /// Parses a string value from the source, expecting format '<length>:<string>'.
@@ -71,14 +73,14 @@ fn parse_string(source: &mut dyn ISource) -> Result<Node, String> {
     }
 
     let len = length.parse::<usize>()
-        .map_err(|_| "Invalid string length".to_string())?;
+        .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())?;
     let mut string = String::new();
     for _ in 0..len {
         if let Some(c) = source.current() {
             string.push(c);
             source.next();
         } else {
-            return Err("String too short".to_string());
+            return Err(ERR_INVALID_STRING_LENGTH.to_string());
         }
     }
     Ok(Node::Str(string))
@@ -102,7 +104,7 @@ fn parse_list(source: &mut dyn ISource) -> Result<Node, String> {
         }
         list.push(parse(source)?);
     }
-    Err("Unterminated list".to_string())
+    Err(ERR_UNTERMINATED_LIST.to_string())
 }
 
 /// Parses a dictionary from the source, expecting format 'd<key><value>...e'.
@@ -125,16 +127,16 @@ fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
         match parse_string(source)? {
             Node::Str(key) => {
                 if key <= last_key {
-                    return Err("Dictionary keys must be in order".to_string());
+                    return Err(ERR_DICT_KEYS_ORDER.to_string());
                 }
                 last_key = key.clone();
                 let value = parse(source)?;
                 dict.insert(key, value);
             }
-            _ => return Err("Dictionary key must be string".to_string())
+            _ => return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string())
         }
     }
-    Err("Unterminated dictionary".to_string())
+    Err(ERR_UNTERMINATED_DICTIONARY.to_string())
 }
 
 #[cfg(test)]
@@ -181,13 +183,13 @@ mod tests {
     #[test]
     fn parse_integer_with_error() {
         let mut source = BufferSource::new(b"i32");
-        assert!(matches!(parse(&mut source), Err(s) if s == "Unterminated integer"));
+        assert!(matches!(parse(&mut source), Err(s) if s == ERR_UNTERMINATED_INTEGER));
     }
 
     #[test]
     fn parse_string_with_error() {
         let mut source = BufferSource::new(b"4:tes");
-        assert!(matches!(parse(&mut source), Err(s) if s == "String too short"));
+        assert!(matches!(parse(&mut source), Err(s) if s == ERR_INVALID_STRING_LENGTH));
     }
 
     #[test]
@@ -199,24 +201,24 @@ mod tests {
     #[test]
     fn parse_negative_zero_fails() {
         let mut source = BufferSource::new(b"i-0e");
-        assert!(matches!(parse(&mut source), Err(s) if s == "Invalid integer"));
+        assert!(matches!(parse(&mut source), Err(s) if s == ERR_INVALID_INTEGER));
     }
 
     #[test]
     fn parse_list_with_error() {
         let mut source = BufferSource::new(b"li32ei33e");
-        assert!(matches!(parse(&mut source), Err(s) if s == "Unterminated list"));
+        assert!(matches!(parse(&mut source), Err(s) if s == ERR_UNTERMINATED_LIST));
     }
 
     #[test]
     fn parse_dictionary_with_error() {
         let mut source = BufferSource::new(b"d4:testi32e");
-        assert!(matches!(parse(&mut source), Err(s) if s == "Unterminated dictionary"));
+        assert!(matches!(parse(&mut source), Err(s) if s == ERR_UNTERMINATED_DICTIONARY));
     }
 
     #[test]
     fn parse_dictionary_with_unordered_keys_fails() {
         let mut source = BufferSource::new(b"d3:bbci32e3:abci42ee");
-        assert!(matches!(parse(&mut source), Err(s) if s == "Dictionary keys must be in order"));
+        assert!(matches!(parse(&mut source), Err(s) if s == ERR_DICT_KEYS_ORDER));
     }
 }
