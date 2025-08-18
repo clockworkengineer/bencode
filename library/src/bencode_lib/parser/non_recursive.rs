@@ -31,7 +31,7 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
                     source.next();
                 }
                 if source.current() != Some('e') {
-                    return Err("Invalid integer format".to_string());
+                    return Err(ERR_INVALID_INTEGER.to_string());
                 }
                 source.next();
                 let value = current_number.parse::<i64>()
@@ -54,7 +54,7 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
             Some('e') => {
                 source.next();
                 if stack.is_empty() {
-                    return Err("Unexpected end marker".to_string());
+                    return Err(ERR_UNTERMINATED_LIST.to_string());
                 }
                 let (node, _) = stack.pop().unwrap();
                 if stack.is_empty() {
@@ -71,7 +71,7 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
                     source.next();
                 }
                 if source.current() != Some(':') {
-                    return Err("Invalid string length format".to_string());
+                    return Err(ERR_INVALID_STRING_LENGTH.to_string());
                 }
                 source.next();
 
@@ -84,7 +84,7 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
                         current_string.push(c);
                         source.next();
                     } else {
-                        return Err("Unexpected end of input".to_string());
+                        return Err(ERR_INVALID_STRING_LENGTH.to_string());
                     }
                 }
 
@@ -104,10 +104,9 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
     }
 
     if stack.is_empty() {
-        Err(ERR_EMPTY_INPUT
-            .to_string())
+        Err(ERR_EMPTY_INPUT.to_string())
     } else {
-        Err("Incomplete input".to_string())
+        Err(ERR_UNTERMINATED_LIST.to_string())
     }
 }
 
@@ -133,7 +132,7 @@ fn handle_value(stack: &mut Vec<(Node, usize)>, value: Node) -> Result<(), Strin
                     // Using a default null-like value until the real value is inserted
                     m.insert(key, Node::List(Vec::new()));
                 } else {
-                    return Err("Dictionary key must be a string".to_string());
+                    return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string());
                 }
             } else {
                 if let Some(key) = m.keys().last() {
