@@ -156,29 +156,6 @@ impl TorrentFile {
         Ok(())
     }
 
-//     pub fn print_details(&self) {
-//         println!("Successfully parsed torrent file:");
-//         println!("Announce URL: {}", self.announce);
-//         println!("Announce List URLs:");
-//         for url in &self.announce_list {
-//             println!("  - {}", url);
-//         }
-//         println!("Encoding: {}", self.encoding);
-//         println!("Attribute: {}", self.attribute);
-//         println!("Comment: {}", self.comment);
-//         println!("Creation Date: {}", self.creation_date);
-//         println!("Created By: {}", self.created_by);
-//         println!("Length: {} bytes", self.length);
-//         println!("Name: {}", self.name);
-//         println!("Piece Length: {}", self.piece_length);
-//         println!("Pieces: {}", self.pieces.as_bytes().iter().map(|b| format!("{:02x}", b)).collect::<String>());
-//         println!("Private Bit Mask: {}", self.private_flag);
-//         println!("Source: {}", self.source);
-//         println!("Files:");
-//         for file in &self.files {
-//             println!("  - {} ({} bytes)", file.path, file.length);
-//         }
-//     }
 }
 
 #[cfg(test)]
