@@ -4,44 +4,44 @@ use std::path::Path;
 
 #[derive(Debug, PartialEq)]
 pub struct FileDetails {
-    path: String,
-    length: u64,
+    pub path: String,
+    pub length: u64,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct TorrentFile {
-    announce: String,
-    announce_list: Vec<String>,
-    encoding: String,
-    attribute: u64,
-    comment: String,
-    creation_date: u64,
-    created_by: String,
-    length: u64,
-    name: String,
-    piece_length: u64,
-    pieces: String,
-    private_flag: u64,
-    source: String,
-    files: Vec<FileDetails>,
+    pub announce: String,
+    pub announce_list: Vec<String>,
+    pub  encoding: String,
+    pub attribute: u64,
+    pub comment: String,
+    pub creation_date: u64,
+    pub created_by: String,
+    pub length: u64,
+    pub name: String,
+    pub piece_length: u64,
+    pub pieces: String,
+    pub private_flag: u64,
+    pub source: String,
+    pub files: Vec<FileDetails>,
 }
 
 impl TorrentFile {
-    fn get_integer(dict: &std::collections::HashMap<String, Node>, key: &str, default: u64) -> u64 {
+    fn get_integer(dict: &HashMap<String, Node>, key: &str, default: u64) -> u64 {
         if let Some(Node::Integer(n)) = dict.get(key) {
             return *n as u64;
         }
         default
     }
 
-    fn get_string(dict: &std::collections::HashMap<String, Node>, key: &str, default: &str) -> String {
+    fn get_string(dict: &HashMap<String, Node>, key: &str, default: &str) -> String {
         if let Some(Node::Str(s)) = dict.get(key) {
             return s.clone();
         }
         default.to_string()
     }
 
-    fn get_info_integer(dict: &std::collections::HashMap<String, Node>, key: &str, default: u64) -> u64 {
+    fn get_info_integer(dict: &HashMap<String, Node>, key: &str, default: u64) -> u64 {
         if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
             if let Some(Node::Integer(n)) = info_dict.get(key) {
                 return *n as u64;
@@ -50,7 +50,7 @@ impl TorrentFile {
         default
     }
 
-    fn get_info_string(dict: &std::collections::HashMap<String, Node>, key: &str, default: &str) -> String {
+    fn get_info_string(dict: &HashMap<String, Node>, key: &str, default: &str) -> String {
         if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
             if let Some(Node::Str(s)) = info_dict.get(key) {
                 return s.clone();
@@ -156,29 +156,29 @@ impl TorrentFile {
         Ok(())
     }
 
-    pub fn print_details(&self) {
-        println!("Successfully parsed torrent file:");
-        println!("Announce URL: {}", self.announce);
-        println!("Announce List URLs:");
-        for url in &self.announce_list {
-            println!("  - {}", url);
-        }
-        println!("Encoding: {}", self.encoding);
-        println!("Attribute: {}", self.attribute);
-        println!("Comment: {}", self.comment);
-        println!("Creation Date: {}", self.creation_date);
-        println!("Created By: {}", self.created_by);
-        println!("Length: {} bytes", self.length);
-        println!("Name: {}", self.name);
-        println!("Piece Length: {}", self.piece_length);
-        println!("Pieces: {}", self.pieces.as_bytes().iter().map(|b| format!("{:02x}", b)).collect::<String>());
-        println!("Private Bit Mask: {}", self.private_flag);
-        println!("Source: {}", self.source);
-        println!("Files:");
-        for file in &self.files {
-            println!("  - {} ({} bytes)", file.path, file.length);
-        }
-    }
+//     pub fn print_details(&self) {
+//         println!("Successfully parsed torrent file:");
+//         println!("Announce URL: {}", self.announce);
+//         println!("Announce List URLs:");
+//         for url in &self.announce_list {
+//             println!("  - {}", url);
+//         }
+//         println!("Encoding: {}", self.encoding);
+//         println!("Attribute: {}", self.attribute);
+//         println!("Comment: {}", self.comment);
+//         println!("Creation Date: {}", self.creation_date);
+//         println!("Created By: {}", self.created_by);
+//         println!("Length: {} bytes", self.length);
+//         println!("Name: {}", self.name);
+//         println!("Piece Length: {}", self.piece_length);
+//         println!("Pieces: {}", self.pieces.as_bytes().iter().map(|b| format!("{:02x}", b)).collect::<String>());
+//         println!("Private Bit Mask: {}", self.private_flag);
+//         println!("Source: {}", self.source);
+//         println!("Files:");
+//         for file in &self.files {
+//             println!("  - {} ({} bytes)", file.path, file.length);
+//         }
+//     }
 }
 
 #[cfg(test)]
