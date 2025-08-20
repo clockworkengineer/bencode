@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 torrent_file= { path = "../torrent_file_lib/" }
+bencode_utility_lib={ path = "../bencode_utility_lib/" }

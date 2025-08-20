@@ -20,6 +20,7 @@ dependencies = [
 name = "bencode_read_torrent_files"
 version = "0.1.0"
 dependencies = [
+ "bencode_utility_lib",
  "torrent_file",
 ]
 
@@ -28,6 +29,7 @@ name = "bencode_torrent_to_json"
 version = "0.1.0"
 dependencies = [
  "bencode_lib",
+ "bencode_utility_lib",
 ]
 
 [[package]]
@@ -35,6 +37,7 @@ name = "bencode_torrent_to_xml"
 version = "0.1.0"
 dependencies = [
  "bencode_lib",
+ "bencode_utility_lib",
 ]
 
 [[package]]
@@ -42,7 +45,12 @@ name = "bencode_torrent_to_yaml"
 version = "0.1.0"
 dependencies = [
  "bencode_lib",
+ "bencode_utility_lib",
 ]
+
+[[package]]
+name = "bencode_utility_lib"
+version = "0.1.0"
 
 [[package]]
 name = "bitflags"
