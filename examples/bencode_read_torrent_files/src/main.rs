@@ -1,4 +1,4 @@
-use bencode_utility_lib::get_torrent_files;
+use bencode_utility_lib::get_torrent_file_list;
 use torrent_file::TorrentFile;
 
 pub fn print_details(torrent: &TorrentFile) {
@@ -34,7 +34,7 @@ pub fn print_details(torrent: &TorrentFile) {
 }
 
 fn main() {
-    let torrent_files = get_torrent_files();
+    let torrent_files = get_torrent_file_list("files");
     for file_path in torrent_files {
         println!("\nProcessing {:?}:", file_path);
         match TorrentFile::from_file(file_path.as_ref()) {
