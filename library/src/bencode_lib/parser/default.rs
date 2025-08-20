@@ -124,8 +124,8 @@ fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
             source.next();
             return Ok(Node::Dictionary(dict));
         }
-        match parse_string(source)? {
-            Node::Str(key) => {
+        match parse_string(source) {
+            Ok(Node::Str(key)) => {
                 if key <= last_key {
                     return Err(ERR_DICT_KEYS_ORDER.to_string());
                 }
@@ -133,7 +133,9 @@ fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
                 let value = parse(source)?;
                 dict.insert(key, value);
             }
-            _ => return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string())
+            Err(_) => { return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string()); }
+            _ => return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string()),
+
         }
     }
     Err(ERR_UNTERMINATED_DICTIONARY.to_string())
@@ -220,5 +222,66 @@ mod tests {
     fn parse_dictionary_with_unordered_keys_fails() {
         let mut source = BufferSource::new(b"d3:bbci32e3:abci42ee");
         assert!(matches!(parse(&mut source), Err(s) if s == ERR_DICT_KEYS_ORDER));
+    }
+
+    #[test]
+    fn parse_nested_list_works() {
+        let mut source = BufferSource::new(b"lli1ei2eeli3ei4eee");
+        match parse(&mut source) {
+            Ok(Node::List(list)) => {
+                assert_eq!(list.len(), 2);
+                assert!(matches!(&list[0], Node::List(l) if l.len() == 2));
+                assert!(matches!(&list[1], Node::List(l) if l.len() == 2));
+            }
+            _ => { assert_eq!(false, true); }
+        }
+    }
+
+    #[test]
+    fn parse_empty_list_works() {
+        let mut source = BufferSource::new(b"le");
+        match parse(&mut source) {
+            Ok(Node::List(list)) => {
+                assert_eq!(list.len(), 0);
+            }
+            _ => { assert_eq!(false, true); }
+        }
+    }
+
+    #[test]
+    fn parse_empty_dictionary_works() {
+        let mut source = BufferSource::new(b"de");
+        match parse(&mut source) {
+            Ok(Node::Dictionary(dict)) => {
+                assert_eq!(dict.len(), 0);
+            }
+            _ => { assert_eq!(false, true); }
+        }
+    }
+
+    #[test]
+    fn parse_dictionary_with_non_string_key_fails() {
+        let mut source = BufferSource::new(b"di32ei42ee");
+        assert!(matches!(parse(&mut source), Err(s) if s == ERR_DICT_KEY_MUST_BE_STRING));
+    }
+
+    #[test]
+    fn parse_mixed_list_works() {
+        let mut source = BufferSource::new(b"li32e4:testi-42ee");
+        match parse(&mut source) {
+            Ok(Node::List(list)) => {
+                assert_eq!(list.len(), 3);
+                assert!(matches!(&list[0], Node::Integer(32)));
+                assert!(matches!(&list[1], Node::Str(s) if s == "test"));
+                assert!(matches!(&list[2], Node::Integer(-42)));
+            }
+            _ => { assert_eq!(false, true); }
+        }
+    }
+
+    #[test]
+    fn parse_invalid_integer_format_fails() {
+        let mut source = BufferSource::new(b"i++32e");
+        assert!(matches!(parse(&mut source), Err(s) if s == ERR_INVALID_INTEGER));
     }
 }
