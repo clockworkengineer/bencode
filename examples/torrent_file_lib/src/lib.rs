@@ -2,12 +2,34 @@ use std::collections::HashMap;
 use bencode_lib::{parse, FileSource, Node};
 use std::path::Path;
 
+/// Represents details about a single file within a torrent
+///
+/// # Fields
+/// * `path` - The file path relative to the torrent root directory
+/// * `length` - Size of the file in bytes
 #[derive(Debug, PartialEq)]
 pub struct FileDetails {
     pub path: String,
     pub length: u64,
 }
 
+/// Represents the metadata contained in a .torrent file
+///
+/// # Fields
+/// * `announce` - The tracker URL
+/// * `announce_list` - List of backup tracker URLs
+/// * `encoding` - Character encoding used for strings
+/// * `attribute` - Optional attribute field
+/// * `comment` - Optional comment about the torrent
+/// * `creation_date` - Unix timestamp of when the torrent was created
+/// * `created_by` - Name/version of the program that created the torrent
+/// * `length` - Total size of all files in bytes
+/// * `name` - Name of the torrent (usually the directory name)
+/// * `piece_length` - Size of each piece in bytes
+/// * `pieces` - String of concatenated 20-byte SHA1 piece hashes
+/// * `private_flag` - Whether the torrent is private (1) or public (0)
+/// * `source` - Source of the torrent
+/// * `files` - List of files included in the torrent
 #[derive(Debug, PartialEq)]
 pub struct TorrentFile {
     pub announce: String,
@@ -27,6 +49,15 @@ pub struct TorrentFile {
 }
 
 impl TorrentFile {
+    /// Helper method to get an integer value from a dictionary
+    ///
+    /// # Arguments
+    /// * `dict` - Dictionary to search in
+    /// * `key` - Key to look up
+    /// * `default` - Default value if key not found
+    ///
+    /// # Returns
+    /// Integer value or default if not found
     fn get_integer(dict: &HashMap<String, Node>, key: &str, default: u64) -> u64 {
         if let Some(Node::Integer(n)) = dict.get(key) {
             return *n as u64;
@@ -34,6 +65,15 @@ impl TorrentFile {
         default
     }
 
+    /// Helper method to get a string value from a dictionary
+    ///
+    /// # Arguments
+    /// * `dict` - Dictionary to search in 
+    /// * `key` - Key to look up
+    /// * `default` - Default value if key not found
+    ///
+    /// # Returns
+    /// String value or default if not found
     fn get_string(dict: &HashMap<String, Node>, key: &str, default: &str) -> String {
         if let Some(Node::Str(s)) = dict.get(key) {
             return s.clone();
@@ -41,6 +81,15 @@ impl TorrentFile {
         default.to_string()
     }
 
+    /// Helper method to get an integer from the info dictionary
+    ///
+    /// # Arguments
+    /// * `dict` - Root dictionary containing info dict
+    /// * `key` - Key to look up in info dict
+    /// * `default` - Default value if key not found
+    ///
+    /// # Returns
+    /// Integer value or default if not found
     fn get_info_integer(dict: &HashMap<String, Node>, key: &str, default: u64) -> u64 {
         if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
             if let Some(Node::Integer(n)) = info_dict.get(key) {
@@ -50,6 +99,15 @@ impl TorrentFile {
         default
     }
 
+    /// Helper method to get a string from the info dictionary
+    ///
+    /// # Arguments 
+    /// * `dict` - Root dictionary containing info dict
+    /// * `key` - Key to look up in info dict
+    /// * `default` - Default value if key not found
+    ///
+    /// # Returns
+    /// String value or default if not found
     fn get_info_string(dict: &HashMap<String, Node>, key: &str, default: &str) -> String {
         if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
             if let Some(Node::Str(s)) = info_dict.get(key) {
@@ -59,6 +117,13 @@ impl TorrentFile {
         default.to_string()
     }
 
+    /// Helper method to extract the announce-list from the torrent
+    ///
+    /// # Arguments
+    /// * `dict` - Root dictionary containing announce-list
+    ///
+    /// # Returns
+    /// Vector of tracker URLs from announce-list or empty vector if not found
     fn get_announce_list(dict: &HashMap<String, Node>) -> Vec<String> {
         match dict.get("announce-list") {
             Some(Node::List(list)) => list
@@ -75,6 +140,13 @@ impl TorrentFile {
         }
     }
 
+    /// Helper method to extract the files list from the info dictionary
+    ///
+    /// # Arguments
+    /// * `dict` - Root dictionary containing info dict with files
+    ///
+    /// # Returns
+    /// Vector of FileDetails or empty vector if not found
     fn get_file_list(dict: &HashMap<String, Node>) -> Vec<FileDetails> {
         if let Some(Node::Dictionary(info_dict)) = dict.get("info") {
             if let Some(Node::List(files_list)) = info_dict.get("files") {
@@ -108,6 +180,13 @@ impl TorrentFile {
         }
     }
 
+    /// Creates a new TorrentFile instance by parsing a .torrent file
+    ///
+    /// # Arguments
+    /// * `path` - Path to the .torrent file to parse
+    ///
+    /// # Returns
+    /// Result containing either the parsed TorrentFile or an error message
     pub fn from_file(path: &Path) -> Result<TorrentFile, String> {
         match FileSource::new(path.to_str().unwrap()) {
             Ok(mut file) => match parse(&mut file) {
@@ -137,6 +216,13 @@ impl TorrentFile {
         }
     }
 
+    /// Validates that all required keys are present in the torrent dictionary
+    ///
+    /// # Arguments
+    /// * `dict` - Dictionary to validate
+    ///
+    /// # Returns
+    /// Ok if all required keys are present, Err with message if any are missing
     pub fn validate_required_keys(dict: &HashMap<String, Node>) -> Result<(), String> {
         let required_keys = ["announce", "info"];
         for key in required_keys {

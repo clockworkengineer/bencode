@@ -1,10 +1,25 @@
+//! Fibonacci sequence generator using bencode format for storage.
+//! This program maintains a sequence of Fibonacci numbers in a bencode file,
+//! reading the existing sequence and appending the next number on each run.
+
 use bencode_lib::{FileDestination, FileSource, Node, parse, stringify};
 use std::path::Path;
+/// Reads a Fibonacci sequence from a bencode-encoded file.
+/// If the file doesn't exist, initializes a new sequence starting with [1, 1].
+///
+/// # Arguments
+/// * `path` - Path to the bencode file containing the sequence
+///
+/// # Returns
+/// * `Ok(Node)` - A Node::List containing the sequence
+/// * `Err(String)` - Error message if reading or parsing fails
 fn read_sequence(path: &Path) -> Result<Node, String> {
+    // Initialize with default sequence if file doesn't exist
     if !path.exists() {
         return Ok(Node::List([Node::Integer(1), Node::Integer(1)].into()));
     }
 
+    // Try to open and parse the existing file
     match FileSource::new(&path.to_string_lossy()) {
         Ok(mut file) => match parse(&mut file) {
             Ok(Node::List(list)) => Ok(Node::List(list)),
@@ -16,7 +31,13 @@ fn read_sequence(path: &Path) -> Result<Node, String> {
 
 }
 
+/// Adds the next Fibonacci number to the sequence by summing the last two numbers.
+/// Uses checked addition to prevent integer overflow.
+///
+/// # Arguments
+/// * `sequence` - Mutable reference to the Node containing the sequence
 fn add_next(sequence: &mut Node) {
+    // Extract the list of numbers from the Node
     if let Node::List(items) = sequence {
         if items.len() < 2 {
             return;
@@ -33,7 +54,17 @@ fn add_next(sequence: &mut Node) {
 
 }
 
+/// Saves the Fibonacci sequence to a bencode-encoded file.
+///
+/// # Arguments
+/// * `path` - Path where to save the sequence
+/// * `sequence` - The Node containing the sequence to save
+///
+/// # Returns
+/// * `Ok(())` - Write operation succeeded
+/// * `Err(String)` - Error message if writing fails
 fn write_sequence(path: &Path, sequence: &Node) -> Result<(), String> {
+    // Create a new file destination, falling back to empty string if path is invalid
     let  file = FileDestination::new(path.to_str().unwrap_or(""));
     match file {
         Ok(mut f) => { stringify(&sequence, &mut f); Ok(()) }
@@ -41,7 +72,11 @@ fn write_sequence(path: &Path, sequence: &Node) -> Result<(), String> {
     }
 }
 
+/// Main program entry point.
+/// Reads the existing Fibonacci sequence, adds the next number,
+/// and saves the updated sequence back to the file.
 fn main() {
+    // Define the path to the sequence file
     let path = Path::new("fibonacci.bencode");
     match read_sequence(path) {
         Ok(mut sequence) => {

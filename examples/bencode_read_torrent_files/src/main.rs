@@ -1,6 +1,15 @@
+//! Example demonstrating how to read and display torrent file metadata using the bencode parser.
+//! This program processes all .torrent files in the "files" directory and displays their contents
+//! in a human-readable format.
+
 use bencode_utility_lib::get_torrent_file_list;
 use torrent_file::TorrentFile;
 
+/// Prints all metadata fields from a parsed torrent file in a human-readable format
+///
+/// # Arguments
+///
+/// * `torrent` - Reference to a TorrentFile struct containing the parsed metadata
 pub fn print_details(torrent: &TorrentFile) {
     println!("Successfully parsed torrent file:");
     println!("Announce URL: {}", torrent.announce);
@@ -33,6 +42,10 @@ pub fn print_details(torrent: &TorrentFile) {
     }
 }
 
+/// Main entry point that:
+/// 1. Retrieves a list of .torrent files from the "files" directory
+/// 2. Attempts to parse each file as a torrent file
+/// 3. Displays the parsed metadata or any parsing errors
 fn main() {
     let torrent_files = get_torrent_file_list("files");
     for file_path in torrent_files {
