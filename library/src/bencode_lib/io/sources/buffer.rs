@@ -83,4 +83,31 @@ mod tests {
         source.reset();
         match source.current() { Some('i') => assert!(true), _ => assert!(false)}
     }
+    #[test]
+    fn create_empty_buffer_works() {
+        let source = Buffer::new(&[]);
+        assert_eq!(source.to_string(), "");
+    }
+    #[test]
+    fn handle_non_utf8_content() {
+        let source = Buffer::new(&[0xFF]);
+        assert_eq!(source.to_string(), String::from_utf8_lossy(&[0xFF]));
+    }
+    #[test]
+    fn more_returns_correct_at_boundaries() {
+        let mut source = Buffer::new(String::from("a").as_bytes());
+        assert!(source.more());
+        source.next();
+        assert!(!source.more());
+    }
+    #[test]
+    fn multiple_next_calls_work() {
+        let mut source = Buffer::new(String::from("abc").as_bytes());
+        source.next();
+        source.next();
+        match source.current() {
+            Some('c') => assert!(true),
+            _ => assert!(false)
+        }
+    }
 }

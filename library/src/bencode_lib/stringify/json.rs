@@ -99,6 +99,48 @@ mod tests {
     }
 
     #[test]
+    fn stringify_unknown_node_works() {
+        let mut destination = Buffer::new();
+        stringify(&Node::None, &mut destination);
+        assert_eq!(destination.to_string(), "");
+    }
+
+    #[test]
+    fn stringify_dictionary_sorting_works() {
+        let mut destination = Buffer::new();
+        let mut dict = std::collections::HashMap::new();
+        dict.insert("z".to_string(), Node::Integer(1));
+        dict.insert("a".to_string(), Node::Integer(2));
+        dict.insert("m".to_string(), Node::Integer(3));
+        stringify(&Node::Dictionary(dict), &mut destination);
+        assert_eq!(destination.to_string(), "{\"a\":2,\"m\":3,\"z\":1}");
+    }
+
+    #[test]
+    fn stringify_dictionary_key_escaping_works() {
+        let mut destination = Buffer::new();
+        let mut dict = std::collections::HashMap::new();
+        dict.insert("key:with\"special\\chars".to_string(), Node::Integer(1));
+        stringify(&Node::Dictionary(dict), &mut destination);
+        assert_eq!(destination.to_string(), "{\"key:with\\\"special\\\\chars\":1}");
+    }
+
+    #[test]
+    fn stringify_complex_nested_structure_works() {
+        let mut destination = Buffer::new();
+        let mut inner_dict1 = std::collections::HashMap::new();
+        inner_dict1.insert("x".to_string(), Node::Integer(1));
+        let mut inner_dict2 = std::collections::HashMap::new();
+        inner_dict2.insert("y".to_string(), Node::List(vec![
+            Node::Str("a".to_string()),
+            Node::Dictionary(inner_dict1),
+            Node::Integer(42)
+        ]));
+        stringify(&Node::Dictionary(inner_dict2), &mut destination);
+        assert_eq!(destination.to_string(), "{\"y\":[\"a\",{\"x\":1},42]}");
+    }
+
+    #[test]
     fn stringify_nested_structures_works() {
         let mut destination = Buffer::new();
         let inner_list = Node::List(vec![Node::Integer(1), Node::Integer(2)]);
@@ -109,5 +151,6 @@ mod tests {
         stringify(&Node::List(vec![inner_list, dict]), &mut destination);
         assert_eq!(destination.to_string(), "[[1,2],{\"key\":\"value\"}]");
     }
+    
 }
 

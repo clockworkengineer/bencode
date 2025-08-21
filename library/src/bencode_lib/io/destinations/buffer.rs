@@ -50,6 +50,11 @@ impl IDestination for Buffer {
 mod tests {
     use super::*;
     #[test]
+    fn new_creates_empty_buffer() {
+        let buffer = Buffer::new();
+        assert!(buffer.buffer.is_empty());
+    }
+    #[test]
     fn add_byte_to_destination_buffer_works() {
         let mut destination = Buffer::new();
         destination.add_byte(b'i');
@@ -85,4 +90,11 @@ mod tests {
         buffer.clear();
         assert_eq!(buffer.last(), None);
     }
+    #[test]
+    fn to_string_handles_non_utf8() {
+        let mut buffer = Buffer::new();
+        buffer.add_byte(0xFF);
+        assert_eq!(buffer.to_string(), "�");
+    }
+    
 }

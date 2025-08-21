@@ -120,6 +120,52 @@ mod tests {
         stringify(&Node::Str(String::from("test")), &mut destination);
         assert_eq!(destination.to_string(), "\"test\"");
     }
+
+    #[test]
+    fn stringify_nested_list_works() {
+        let mut destination = Buffer::new();
+        stringify(&Node::List(vec![Node::List(vec![Node::Integer(1)])]), &mut destination);
+        assert_eq!(destination.to_string(), "\n- \n  - 1\n\n");
+    }
+
+    #[test]
+    fn stringify_nested_dictionary_works() {
+        let mut destination = Buffer::new();
+        let mut inner_dict = std::collections::HashMap::new();
+        inner_dict.insert("inner".to_string(), Node::Integer(1));
+        let mut outer_dict = std::collections::HashMap::new();
+        outer_dict.insert("outer".to_string(), Node::Dictionary(inner_dict));
+        stringify(&Node::Dictionary(outer_dict), &mut destination);
+        assert_eq!(destination.to_string(), "\nouter: \n  inner: 1\n\n");
+    }
+
+    #[test]
+    fn stringify_multi_entry_dictionary_works() {
+        let mut destination = Buffer::new();
+        let mut dict = std::collections::HashMap::new();
+        dict.insert("a".to_string(), Node::Integer(1));
+        dict.insert("b".to_string(), Node::Integer(2));
+        stringify(&Node::Dictionary(dict), &mut destination);
+        assert_eq!(destination.to_string(), "\na: 1\nb: 2\n");
+    }
+
+    #[test]
+    fn stringify_mixed_list_works() {
+        let mut destination = Buffer::new();
+        stringify(&Node::List(vec![
+            Node::Integer(1),
+            Node::Str("test".to_string()),
+            Node::List(vec![])
+        ]), &mut destination);
+        assert_eq!(destination.to_string(), "\n- 1\n- \"test\"\n- []\n");
+    }
+
+    #[test]
+    fn stringify_unknown_works() {
+        let mut destination = Buffer::new();
+        stringify(&Node::None, &mut destination);
+        assert_eq!(destination.to_string(), "None");
+    }
 }
 
 

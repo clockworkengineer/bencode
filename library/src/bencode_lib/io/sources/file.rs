@@ -64,7 +64,6 @@ impl ISource for File {
         }
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -87,6 +86,21 @@ mod tests {
         let path = create_test_file("i32e");
         let source = File::new(&path);
         assert!(source.is_ok());
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn create_source_non_existent_file_fails() {
+        let result = File::new("non_existent_file.txt");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn create_source_empty_file_works() {
+        let path = create_test_file("");
+        let mut source = File::new(&path).unwrap();
+        assert_eq!(source.current(), None);
+        assert!(!source.more());
         cleanup_file(&path);
     }
 
@@ -127,6 +141,29 @@ mod tests {
         }
         source.reset();
         assert_eq!(source.current(), Some('i'));
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn reset_with_seek_error_maintains_state() {
+        let path = create_test_file("i32e");
+        let mut source = File::new(&path).unwrap();
+        cleanup_file(&path); // Remove file to cause seek error
+        source.reset();
+        assert_eq!(source.current(), Some('i'));
+    }
+
+    #[test]
+    fn read_complete_file_content_matches() {
+        let test_content = "i32e";
+        let path = create_test_file(test_content);
+        let mut source = File::new(&path).unwrap();
+        let mut content = String::new();
+        while source.more() {
+            content.push(source.current().unwrap());
+            source.next();
+        }
+        assert_eq!(content, test_content);
         cleanup_file(&path);
     }
 }

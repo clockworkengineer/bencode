@@ -102,6 +102,33 @@ mod tests {
     }
 
     #[test]
+    fn create_file_fails_with_invalid_path() {
+        let result = File::new("/invalid/path/test.txt");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn write_fails_on_readonly_file() -> std::io::Result<()> {
+        let path = "test_readonly.txt";
+        let mut file = File::new(path)?;
+        let mut perms = fs::metadata(path)?.permissions();
+        perms.set_readonly(true);
+        fs::set_permissions(path, perms)?;
+
+        file.add_bytes("test");
+
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn read_fails_on_missing_file() {
+        let path = "missing_file.txt";
+        let file = File::new(path).unwrap();
+        assert!(file.last().is_none());
+    }
+
+    #[test]
     fn add_byte_works() -> std::io::Result<()> {
         let path = "test_byte.txt";
         let mut file = File::new(path)?;
@@ -187,12 +214,24 @@ mod tests {
         fs::remove_file(path)?;
         Ok(())
     }
+
+    #[test]
+    fn last_handles_empty_file() -> std::io::Result<()> {
+        let path = "test_empty.txt";
+        let file = File::new(path)?;
+        assert_eq!(file.last(), None);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
     #[test]
     fn close_works() -> std::io::Result<()> {
         let path = "test_name.txt";
         let file = File::new(path)?;
         file.close()?;
+        fs::remove_file(path)?;
         Ok(())
     }
+    
 }
 

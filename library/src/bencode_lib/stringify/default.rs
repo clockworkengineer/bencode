@@ -97,4 +97,33 @@ mod tests {
         stringify(&make_node(dict), &mut destination);
         assert_eq!(destination.to_string(), "d3:keyi32ee");
     }
+
+    #[test]
+    fn stringify_none_works() {
+        let mut destination = BufferDestination::new();
+        stringify(&Node::None, &mut destination);
+        assert_eq!(destination.to_string(), "");
+    }
+
+    #[test]
+    fn stringify_complex_dictionary_works() {
+        let mut destination = BufferDestination::new();
+        let mut dict = HashMap::new();
+        dict.insert(String::from("b"), make_node(1));
+        dict.insert(String::from("a"), make_node(2));
+        dict.insert(String::from("c"), make_node("test"));
+        stringify(&make_node(dict), &mut destination);
+        assert_eq!(destination.to_string(), "d1:ai2e1:bi1e1:c4:teste");
+    }
+
+    #[test]
+    fn stringify_nested_dictionary_works() {
+        let mut destination = BufferDestination::new();
+        let mut inner_dict = HashMap::new();
+        inner_dict.insert(String::from("key2"), make_node("value"));
+        let mut outer_dict = HashMap::new();
+        outer_dict.insert(String::from("key1"), make_node(inner_dict));
+        stringify(&make_node(outer_dict), &mut destination);
+        assert_eq!(destination.to_string(), "d4:key1d4:key25:valueee");
+    }
 }

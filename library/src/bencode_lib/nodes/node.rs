@@ -321,4 +321,49 @@ mod tests {
             _ => assert_eq!(false, true),
         }
     }
+
+    #[test]
+    fn none_node_works() {
+        let node = Node::None;
+        match node {
+            Node::None => (),
+            _ => assert_eq!(false, true),
+        }
+    }
+
+    #[test]
+    fn mixed_dictionary_from_array_works() {
+        let node = Node::from([
+            ("int", Node::Integer(1)),
+            ("str", Node::Str("test".to_string())),
+            ("list", Node::List(Vec::<Node>::new())),
+        ]);
+        match node {
+            Node::Dictionary(map) => {
+                assert_eq!(map.len(), 3);
+                assert!(matches!(map.get("int"), Some(Node::Integer(1))));
+                assert!(matches!(map.get("str"), Some(Node::Str(_))));
+                assert!(matches!(map.get("list"), Some(Node::List(_))));
+            }
+            _ => assert_eq!(false, true),
+        }
+    }
+
+    #[test]
+    fn empty_array_to_list_works() {
+        let node = Node::from([] as [i64; 0]);
+        match node {
+            Node::List(list) => assert_eq!(list.len(), 0),
+            _ => assert_eq!(false, true),
+        }
+    }
+
+    #[test]
+    fn empty_array_to_dictionary_works() {
+        let node = Node::from([] as [(String, Node); 0]);
+        match node {
+            Node::Dictionary(map) => assert_eq!(map.len(), 0),
+            _ => assert_eq!(false, true),
+        }
+    }
 }

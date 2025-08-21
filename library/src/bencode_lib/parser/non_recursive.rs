@@ -151,6 +151,36 @@ mod tests {
     use super::*;
     use crate::bencode_lib::io::sources::buffer::Buffer;
 
+    // Implement PartialEq for Node in the test module scope
+    impl PartialEq for Node {
+        fn eq(&self, other: &Self) -> bool {
+            match (self, other) {
+                (Node::Integer(a), Node::Integer(b)) => a == b,
+                (Node::Str(a), Node::Str(b)) => a == b,
+                (Node::List(a), Node::List(b)) => a == b,
+                (Node::Dictionary(a), Node::Dictionary(b)) => {
+                    if a.len() != b.len() {
+                        return false;
+                    }
+                    for (key, val_a) in a {
+                        if !b.contains_key(key) {
+                            return false;
+                        }
+                        if let Some(val_b) = b.get(key) {
+                            if val_a != val_b {
+                                return false;
+                            }
+                        } else {
+                            return false;
+                        }
+                    }
+                    true
+                },
+                _ => false,
+            }
+        }
+    }
+
     #[test]
     fn test_parse_integer() {
         let mut source = Buffer::new(b"i42e");
@@ -237,5 +267,38 @@ mod tests {
     fn test_invalid_dictionary_key() {
         let mut source = Buffer::new(b"di42e5:valuee");
         assert!(parse(&mut source).is_err());
+    }
+
+    #[test]
+    fn test_empty_input() {
+        let mut source = Buffer::new(b"");
+        assert_eq!(parse(&mut source).unwrap_err(), ERR_EMPTY_INPUT.to_string());
+    }
+
+    #[test]
+    fn test_multiple_spaces() {
+        let mut source = Buffer::new(b"    i42e    ");
+        let result = parse(&mut source);
+        assert!(result.is_ok());
+        if let Ok(Node::Integer(val)) = result {
+            assert_eq!(val, 42);
+        } else {
+            panic!("Expected Node::Integer(42)");
+        }
+    }
+
+    #[test]
+    fn test_complex_dictionary() {
+        let mut source = Buffer::new(b"d3:foo3:bar4:test5:value5:hello5:worlde");
+        let result = parse(&mut source);
+        assert!(result.is_ok());
+        if let Ok(Node::Dictionary(map)) = result {
+            assert_eq!(map.len(), 3);
+            assert_eq!(map.get("foo").unwrap(), &Node::Str("bar".to_string()));
+            assert_eq!(map.get("test").unwrap(), &Node::Str("value".to_string()));
+            assert_eq!(map.get("hello").unwrap(), &Node::Str("world".to_string()));
+        } else {
+            panic!("Expected Node::Dictionary");
+        }
     }
 }

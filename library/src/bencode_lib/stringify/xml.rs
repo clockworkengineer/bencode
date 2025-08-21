@@ -79,6 +79,50 @@ mod tests {
         stringify(&Node::Dictionary(dict), &mut destination);
         assert_eq!(destination.to_string(), "<dictionary><item><key>key</key><value><string>value</string></value></item></dictionary>");
     }
+
+    #[test]
+    fn test_empty_list() {
+        let mut destination = Buffer::new();
+        stringify(&Node::List(vec![]), &mut destination);
+        assert_eq!(destination.to_string(), "<list></list>");
+    }
+
+    #[test]
+    fn test_empty_dictionary() {
+        let mut destination = Buffer::new();
+        stringify(&Node::Dictionary(std::collections::HashMap::new()), &mut destination);
+        assert_eq!(destination.to_string(), "<dictionary></dictionary>");
+    }
+
+    #[test]
+    fn test_none_node() {
+        let mut destination = Buffer::new();
+        stringify(&Node::None, &mut destination);
+        assert_eq!(destination.to_string(), "");
+    }
+
+    #[test]
+    fn test_nested_dictionary() {
+        let mut destination = Buffer::new();
+        let mut inner_dict = std::collections::HashMap::new();
+        inner_dict.insert("inner_key".into(), Node::Integer(42));
+        let mut outer_dict = std::collections::HashMap::new();
+        outer_dict.insert("outer_key".into(), Node::Dictionary(inner_dict));
+        stringify(&Node::Dictionary(outer_dict), &mut destination);
+        assert_eq!(destination.to_string(), "<dictionary><item><key>outer_key</key><value><dictionary><item><key>inner_key</key><value><integer>42</integer></value></item></dictionary></value></item></dictionary>");
+    }
+
+    #[test]
+    fn test_nested_list_mixed() {
+        let mut destination = Buffer::new();
+        let nested = Node::List(vec![
+            Node::Integer(1),
+            Node::List(vec![Node::Str("nested".into())]),
+            Node::None
+        ]);
+        stringify(&nested, &mut destination);
+        assert_eq!(destination.to_string(), "<list><integer>1</integer><list><string>nested</string></list></list>");
+    }
 }
 
 
