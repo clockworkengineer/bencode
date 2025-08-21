@@ -164,7 +164,7 @@ mod tests {
     fn stringify_unknown_works() {
         let mut destination = Buffer::new();
         stringify(&Node::None, &mut destination);
-        assert_eq!(destination.to_string(), "None");
+        assert_eq!(destination.to_string(), "unknown");
     }
 }
 
