@@ -133,8 +133,7 @@ fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
                 let value = parse(source)?;
                 dict.insert(key, value);
             }
-            Err(_) => { return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string()); }
-            _ => return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string()),
+            _ => return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string())
 
         }
     }
