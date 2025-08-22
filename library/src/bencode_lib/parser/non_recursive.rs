@@ -149,7 +149,7 @@ fn handle_value(stack: &mut Vec<(Node, usize)>, value: Node) -> Result<(), Strin
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bencode_lib::io::sources::buffer::Buffer;
+    use crate::BufferSource;
 
     // Implement PartialEq for Node in the test module scope
     impl PartialEq for Node {
@@ -183,31 +183,31 @@ mod tests {
 
     #[test]
     fn test_parse_integer() {
-        let mut source = Buffer::new(b"i42e");
+        let mut source = BufferSource::new(b"i42e");
         let result = parse(&mut source);
         assert!(result.is_ok());
         if let Ok(Node::Integer(val)) = result {
             assert_eq!(val, 42);
         } else {
-            panic!("Expected Node::Integer(42)");
+            assert_eq!(false, true);
         }
     }
 
     #[test]
     fn test_parse_string() {
-        let mut source = Buffer::new(b"4:test");
+        let mut source = BufferSource::new(b"4:test");
         let result = parse(&mut source);
         assert!(result.is_ok());
         if let Ok(Node::Str(val)) = result {
             assert_eq!(val, "test".to_string());
         } else {
-            panic!("Expected Node::Str(\"test\")");
+            assert_eq!(false, true);
         }
     }
 
     #[test]
     fn test_parse_list() {
-        let mut source = Buffer::new(b"li42e4:teste");
+        let mut source = BufferSource::new(b"li42e4:teste");
         let result = parse(&mut source);
         assert!(result.is_ok());
         if let Ok(Node::List(items)) = result {
@@ -215,21 +215,21 @@ mod tests {
             if let Node::Integer(val) = &items[0] {
                 assert_eq!(*val, 42);
             } else {
-                panic!("Expected first item to be Node::Integer(42)");
+                assert_eq!(false, true);
             }
             if let Node::Str(val) = &items[1] {
                 assert_eq!(val, "test");
             } else {
-                panic!("Expected second item to be Node::Str(\"test\")");
+                assert_eq!(false, true);
             }
         } else {
-            panic!("Expected Node::List");
+            assert_eq!(false, true);
         }
     }
 
     #[test]
     fn test_parse_dictionary() {
-        let mut source = Buffer::new(b"d3:key5:valuee");
+        let mut source = BufferSource::new(b"d3:key5:valuee");
         let result = parse(&mut source);
         assert!(result.is_ok());
         if let Ok(Node::Dictionary(map)) = result {
@@ -238,58 +238,58 @@ mod tests {
             if let Some(Node::Str(val)) = map.get("key") {
                 assert_eq!(val, "value");
             } else {
-                panic!("Expected value for key \"key\" to be Node::Str(\"value\")");
+                assert_eq!(false, true);
             }
         } else {
-            panic!("Expected Node::Dictionary");
+            assert_eq!(false, true);
         }
     }
 
     #[test]
     fn test_invalid_integer() {
-        let mut source = Buffer::new(b"i42");
+        let mut source = BufferSource::new(b"i42");
         assert!(parse(&mut source).is_err());
     }
 
     #[test]
     fn test_invalid_string_length() {
-        let mut source = Buffer::new(b"4:te");
+        let mut source = BufferSource::new(b"4:te");
         assert!(parse(&mut source).is_err());
     }
 
     #[test]
     fn test_incomplete_list() {
-        let mut source = Buffer::new(b"li42e");
+        let mut source = BufferSource::new(b"li42e");
         assert!(parse(&mut source).is_err());
     }
 
     #[test]
     fn test_invalid_dictionary_key() {
-        let mut source = Buffer::new(b"di42e5:valuee");
+        let mut source = BufferSource::new(b"di42e5:valuee");
         assert!(parse(&mut source).is_err());
     }
 
     #[test]
     fn test_empty_input() {
-        let mut source = Buffer::new(b"");
+        let mut source = BufferSource::new(b"");
         assert_eq!(parse(&mut source).unwrap_err(), ERR_EMPTY_INPUT.to_string());
     }
 
     #[test]
     fn test_multiple_spaces() {
-        let mut source = Buffer::new(b"    i42e    ");
+        let mut source = BufferSource::new(b"    i42e    ");
         let result = parse(&mut source);
         assert!(result.is_ok());
         if let Ok(Node::Integer(val)) = result {
             assert_eq!(val, 42);
         } else {
-            panic!("Expected Node::Integer(42)");
+            assert_eq!(false, true);
         }
     }
 
     // #[test]
     // fn test_complex_dictionary() {
-    //     let mut source = Buffer::new(b"d3:foo3:bar4:test5:value5:hello5:worlde");
+    //     let mut source = BufferSource::new(b"d3:foo3:bar5:hello5:world4:test5:valuee");
     //     let result = parse(&mut source);
     //     assert!(result.is_ok());
     //     if let Ok(Node::Dictionary(map)) = result {
@@ -298,7 +298,7 @@ mod tests {
     //         assert_eq!(map.get("test").unwrap(), &Node::Str("value".to_string()));
     //         assert_eq!(map.get("hello").unwrap(), &Node::Str("world".to_string()));
     //     } else {
-    //         panic!("Expected Node::Dictionary");
+    // assert_eq!(false, true);
     //     }
     // }
 }
