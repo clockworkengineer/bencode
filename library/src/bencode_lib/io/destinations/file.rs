@@ -126,6 +126,7 @@ mod tests {
         let path = "missing_file.txt";
         let file = File::new(path).unwrap();
         assert!(file.last().is_none());
+        fs::remove_file(path).unwrap();
     }
 
     #[test]

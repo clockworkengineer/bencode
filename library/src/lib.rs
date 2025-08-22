@@ -22,7 +22,7 @@ pub use bencode_lib::nodes::node::Node as Node;
 /// Converts a Node tree back to bencode format
 pub use bencode_lib::stringify::default::stringify as stringify;
 /// Parses bencode data into a Node tree structure
-pub use bencode_lib::parser::non_recursive::parse as parse;
+pub use bencode_lib::parser::default::parse as parse;
 /// Converts a Node tree to JSON format
 pub use bencode_lib::stringify::json::stringify as to_json;
 /// Converts a Node tree to YAML format
