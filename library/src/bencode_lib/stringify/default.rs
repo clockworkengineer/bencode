@@ -126,4 +126,21 @@ mod tests {
         stringify(&make_node(outer_dict), &mut destination);
         assert_eq!(destination.to_string(), "d4:key1d4:key25:valueee");
     }
+
+    #[test]
+    fn stringify_list_with_none_works() {
+        let mut destination = BufferDestination::new();
+        let list = vec![make_node(32), Node::None, make_node("test")];
+        stringify(&make_node(list), &mut destination);
+        assert_eq!(destination.to_string(), "li32e4:teste");
+    }
+
+    #[test]
+    fn stringify_dictionary_with_list_works() {
+        let mut destination = BufferDestination::new();
+        let mut dict = HashMap::new();
+        dict.insert(String::from("list"), make_node(vec![make_node(1), make_node(2)]));
+        stringify(&make_node(dict), &mut destination);
+        assert_eq!(destination.to_string(), "d4:listli1ei2eee");
+    }
 }

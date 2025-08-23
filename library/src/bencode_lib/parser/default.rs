@@ -20,6 +20,7 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
         Some('l') => parse_list(source),
         Some('d') => parse_dictionary(source),
         Some('0'..='9') => parse_string(source),
+        Some(':') => Err(ERR_INVALID_STRING_LENGTH.to_string()),
         Some(c) => Err(unexpected_character(c)),
         None => Err(ERR_EMPTY_INPUT
             .to_string())
@@ -298,4 +299,33 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_invalid_character() {
+        let mut source = BufferSource::new(b"x123");
+        assert!(matches!(parse(&mut source), Err(s) if s.contains("Unexpected character")));
+    }
+
+    #[test]
+    fn test_empty_input() {
+        let mut source = BufferSource::new(b"");
+        assert!(matches!(parse(&mut source), Err(s) if s == ERR_EMPTY_INPUT));
+    }
+
+    #[test]
+    fn test_invalid_string_colon_only() {
+        let mut source = BufferSource::new(b":");
+        assert!(matches!(parse(&mut source), Err(s) if s == ERR_INVALID_STRING_LENGTH));
+    }
+
+    #[test]
+    fn test_zero_length_string() {
+        let mut source = BufferSource::new(b"0:");
+        assert!(matches!(parse(&mut source), Ok(Node::Str(s)) if s.is_empty()));
+    }
+
+    #[test]
+    fn test_invalid_string_length() {
+        let mut source = BufferSource::new(b"a:test");
+        assert!(matches!(parse(&mut source), Err(s) if s.contains("Unexpected character")));
+    }
 }
