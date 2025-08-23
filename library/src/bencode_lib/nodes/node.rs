@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 /// A node in the bencode data structure that can represent different types of values.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Node {
     /// Represents a 64-bit signed integer value
     Integer(i64),
