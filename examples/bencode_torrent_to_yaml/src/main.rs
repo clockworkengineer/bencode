@@ -14,7 +14,7 @@ use bencode_utility_lib::get_torrent_file_list;
 /// # Returns
 ///
 /// * `Ok(())` if conversion was successful
-/// * `Err(String)` containing error message if conversion failed
+/// * `Err(String)` containing an error message if conversion failed
 fn process_torrent_file(file_path: &str) -> Result<(), String> {
     // Open and read the source torrent file
     let mut source = FileSource::new(file_path).map_err(|e| e.to_string())?;

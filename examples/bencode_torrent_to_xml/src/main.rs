@@ -12,7 +12,7 @@ use bencode_utility_lib::get_torrent_file_list;
 ///
 /// # Returns
 /// * `Ok(())` if conversion was successful
-/// * `Err(String)` containing error message if conversion failed
+/// * `Err(String)` containing an error message if conversion failed
 fn process_torrent_file(file_path: &str) -> Result<(), String> {
     // Create a file source for reading the torrent file
     let mut source = FileSource::new(file_path).map_err(|e| e.to_string())?;
@@ -26,7 +26,7 @@ fn process_torrent_file(file_path: &str) -> Result<(), String> {
 }
 
 fn main() {
-    // Get list of torrent files from the 'files' directory
+    // Get a list of torrent files from the 'files' directory
     let torrent_files = get_torrent_file_list("files");
     // Process each torrent file and convert to XML
     for file_path in torrent_files {

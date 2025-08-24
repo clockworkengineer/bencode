@@ -54,7 +54,7 @@ impl TorrentFile {
     /// # Arguments
     /// * `dict` - Dictionary to search in
     /// * `key` - Key to look up
-    /// * `default` - Default value if key not found
+    /// * `default` - Default value if key is not found
     ///
     /// # Returns
     /// Integer value or default if not found
@@ -70,7 +70,7 @@ impl TorrentFile {
     /// # Arguments
     /// * `dict` - Dictionary to search in 
     /// * `key` - Key to look up
-    /// * `default` - Default value if key not found
+    /// * `default` - Default value if key is not found
     ///
     /// # Returns
     /// String value or default if not found
@@ -86,7 +86,7 @@ impl TorrentFile {
     /// # Arguments
     /// * `dict` - Root dictionary containing info dict
     /// * `key` - Key to look up in info dict
-    /// * `default` - Default value if key not found
+    /// * `default` - Default value if key is not found
     ///
     /// # Returns
     /// Integer value or default if not found
@@ -104,7 +104,7 @@ impl TorrentFile {
     /// # Arguments 
     /// * `dict` - Root dictionary containing info dict
     /// * `key` - Key to look up in info dict
-    /// * `default` - Default value if key not found
+    /// * `default` - Default value if key is not found
     ///
     /// # Returns
     /// String value or default if not found
@@ -120,10 +120,10 @@ impl TorrentFile {
     /// Helper method to extract the announce-list from the torrent
     ///
     /// # Arguments
-    /// * `dict` - Root dictionary containing announce-list
+    /// * `dict` - Root dictionary containing the announce-list
     ///
     /// # Returns
-    /// Vector of tracker URLs from announce-list or empty vector if not found
+    /// Vector of tracker URLs from the announce-list or empty vector if not found
     fn get_announce_list(dict: &HashMap<String, Node>) -> Vec<String> {
         match dict.get("announce-list") {
             Some(Node::List(list)) => list
@@ -140,7 +140,7 @@ impl TorrentFile {
         }
     }
 
-    /// Helper method to extract the files list from the info dictionary
+    /// Helper method to extract the file list from the info dictionary
     ///
     /// # Arguments
     /// * `dict` - Root dictionary containing info dict with files
@@ -222,7 +222,7 @@ impl TorrentFile {
     /// * `dict` - Dictionary to validate
     ///
     /// # Returns
-    /// Ok if all required keys are present, Err with message if any are missing
+    /// Ok if all required keys are present, Err with the message if any are missing
     pub fn validate_required_keys(dict: &HashMap<String, Node>) -> Result<(), String> {
         let required_keys = ["announce", "info"];
         for key in required_keys {
