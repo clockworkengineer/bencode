@@ -72,7 +72,7 @@ impl IDestination for File {
     /// Returns the last byte in the file, if any.
     ///
     /// # Returns
-    /// The last byte as Some(u8) or None if file is empty
+    /// The last byte as Some(u8) or None if the file is empty
     fn last(&self) -> Option<u8> {
         if self.file_length == 0 {
             None

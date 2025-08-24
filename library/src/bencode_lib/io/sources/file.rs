@@ -148,7 +148,7 @@ mod tests {
     fn reset_with_seek_error_maintains_state() {
         let path = create_test_file("i32e");
         let mut source = File::new(&path).unwrap();
-        cleanup_file(&path); // Remove file to cause seek error
+        cleanup_file(&path); // Remove the file to cause seek error
         source.reset();
         assert_eq!(source.current(), Some('i'));
     }

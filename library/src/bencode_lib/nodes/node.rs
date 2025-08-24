@@ -50,7 +50,7 @@ impl From<HashMap<String, Node>> for Node {
     }
 }
 
-// Allow creating a List node from a static array literal, e.g. Node::from([1, 2, 3])
+// Allow creating a List node from a static array literal, e.g., Node::from([1, 2, 3])
 impl<T, const N: usize> From<[T; N]> for Node
 where
     T: Into<Node>,
@@ -60,8 +60,8 @@ where
     }
 }
 
-// Allow creating a Dictionary node from a static array of key-value pairs,
-// e.g. Node::from([("a", 1), ("b", 2)])
+// Allow creating a Dictionary node from a static array of key-value pairs.
+// e.g., Node::from([("a", 1), ("b", 2)])
 impl<K, V, const N: usize> From<[(K, V); N]> for Node
 where
     K: Into<String>,
@@ -76,7 +76,7 @@ where
     }
 }
 
-/// Helper function to create a Node from any value that can be converted into a Node
+/// Helper functions to create a Node from any value that can be converted into a Node
 pub fn make_node<T>(value: T) -> Node
 where
     T: Into<Node>,
