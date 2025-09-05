@@ -13,10 +13,21 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
         Node::Integer(value) => {
             destination.add_bytes(&value.to_string());
         }
-        // Format string value as JSON by wrapping it in double quotes
+        // Format a string value as JSON by wrapping it in double quotes
         Node::Str(value) => {
             destination.add_byte(b'"');
-            destination.add_bytes(value);
+            for &byte in value.as_bytes() {
+                if byte == b'"' || byte == b'\\' {
+                    destination.add_byte(b'\\');
+                    destination.add_byte(byte);
+                } else if byte.is_ascii_graphic() || byte == b' ' {
+                    destination.add_byte(byte);
+                } else {
+                    // Convert unprintable characters to \u escape sequence 
+                    let escaped = format!("\\u{:04x}", byte);
+                    destination.add_bytes(&escaped);
+                }
+            }
             destination.add_byte(b'"');
         }
         Node::List(items) => {

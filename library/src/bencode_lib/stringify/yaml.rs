@@ -26,7 +26,22 @@ fn write_node(node: &Node, level: usize, destination: &mut dyn IDestination) {
         // Write integer values directly
         Node::Integer(n) => destination.add_bytes(&n.to_string()),
         // Write strings with quotes and proper UTF-8 encoding
-        Node::Str(s) => destination.add_bytes(&format!("\"{}\"", String::from_utf8_lossy(s.as_ref()))),
+        Node::Str(s) => {
+            destination.add_byte(b'"');
+            for &byte in s.as_bytes() {
+                if byte == b'"' || byte == b'\\' {
+                    destination.add_byte(b'\\');
+                    destination.add_byte(byte);
+                } else if byte.is_ascii_graphic() || byte == b' ' {
+                    destination.add_byte(byte);
+                } else {
+                    // Convert unprintable characters to \u escape sequence
+                    let escaped = format!("\\u{:04x}", byte);
+                    destination.add_bytes(&escaped);
+                }
+            }
+            destination.add_byte(b'"');
+        },
         // Write lists with proper YAML array formatting
         Node::List(items) => {
             if items.is_empty() {

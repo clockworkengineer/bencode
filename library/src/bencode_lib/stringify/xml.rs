@@ -1,5 +1,5 @@
-use crate::bencode_lib::nodes::node::*;
 use crate::bencode_lib::io::traits::IDestination;
+use crate::bencode_lib::nodes::node::*;
 
 /// Converts a bencode Node into XML format and writes it to the given destination.
 /// Each node type is wrapped in appropriate XML tags based on its type.
@@ -12,7 +12,18 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
         Node::Str(value) => {
             // Wrap string value in <string> tags
             destination.add_bytes("<string>");
-            destination.add_bytes(value);
+            for &byte in value.as_bytes() {
+                if byte == b'"' || byte == b'\\' {
+                    destination.add_byte(b'\\');
+                    destination.add_byte(byte);
+                } else if byte.is_ascii_graphic() || byte == b' ' {
+                    destination.add_byte(byte);
+                } else {
+                    // Convert unprintable characters to \u escape sequence
+                    let escaped = format!("\\u{:04x}", byte);
+                    destination.add_bytes(&escaped);
+                }
+            }
             destination.add_bytes("</string>");
         }
         Node::Integer(value) => {
@@ -67,8 +78,14 @@ mod tests {
     #[test]
     fn test_list_node() {
         let mut destination = Buffer::new();
-        stringify(&Node::List(vec![Node::Integer(1), Node::Str("test".into())]), &mut destination);
-        assert_eq!(destination.to_string(), "<list><integer>1</integer><string>test</string></list>");
+        stringify(
+            &Node::List(vec![Node::Integer(1), Node::Str("test".into())]),
+            &mut destination,
+        );
+        assert_eq!(
+            destination.to_string(),
+            "<list><integer>1</integer><string>test</string></list>"
+        );
     }
 
     #[test]
@@ -77,7 +94,10 @@ mod tests {
         let mut dict = std::collections::HashMap::new();
         dict.insert("key".into(), Node::Str("value".into()));
         stringify(&Node::Dictionary(dict), &mut destination);
-        assert_eq!(destination.to_string(), "<dictionary><item><key>key</key><value><string>value</string></value></item></dictionary>");
+        assert_eq!(
+            destination.to_string(),
+            "<dictionary><item><key>key</key><value><string>value</string></value></item></dictionary>"
+        );
     }
 
     #[test]
@@ -90,7 +110,10 @@ mod tests {
     #[test]
     fn test_empty_dictionary() {
         let mut destination = Buffer::new();
-        stringify(&Node::Dictionary(std::collections::HashMap::new()), &mut destination);
+        stringify(
+            &Node::Dictionary(std::collections::HashMap::new()),
+            &mut destination,
+        );
         assert_eq!(destination.to_string(), "<dictionary></dictionary>");
     }
 
@@ -109,7 +132,10 @@ mod tests {
         let mut outer_dict = std::collections::HashMap::new();
         outer_dict.insert("outer_key".into(), Node::Dictionary(inner_dict));
         stringify(&Node::Dictionary(outer_dict), &mut destination);
-        assert_eq!(destination.to_string(), "<dictionary><item><key>outer_key</key><value><dictionary><item><key>inner_key</key><value><integer>42</integer></value></item></dictionary></value></item></dictionary>");
+        assert_eq!(
+            destination.to_string(),
+            "<dictionary><item><key>outer_key</key><value><dictionary><item><key>inner_key</key><value><integer>42</integer></value></item></dictionary></value></item></dictionary>"
+        );
     }
 
     #[test]
@@ -118,11 +144,12 @@ mod tests {
         let nested = Node::List(vec![
             Node::Integer(1),
             Node::List(vec![Node::Str("nested".into())]),
-            Node::None
+            Node::None,
         ]);
         stringify(&nested, &mut destination);
-        assert_eq!(destination.to_string(), "<list><integer>1</integer><list><string>nested</string></list></list>");
+        assert_eq!(
+            destination.to_string(),
+            "<list><integer>1</integer><list><string>nested</string></list></list>"
+        );
     }
 }
-
-
