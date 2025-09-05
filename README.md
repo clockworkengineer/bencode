@@ -37,15 +37,15 @@ use bencode_lib::{FileSource, FileDestination, parse, to_yaml};
 use std::path::Path;
 
 fn main() -> Result<(), String> {
-let input_path = "example.torrent";
-let output_path = Path::new(input_path).with_extension("yaml");
+    let input_path = "example.torrent";
+    let output_path = Path::new(input_path).with_extension("yaml");
 
     // Read and parse bencode
-    let mut src = FileSource::new(input_path)?;
+    let mut src = FileSource::new(input_path).map_err(|e| e.to_string())?;
     let node = parse(&mut src)?;
 
     // Convert to YAML and write out
-    let mut dst = FileDestination::new(output_path.to_string_lossy().as_ref())?;
+    let mut dst = FileDestination::new(output_path.to_string_lossy().as_ref()).map_err(|e| e.to_string())?;
     to_yaml(&node, &mut dst);
     Ok(())
 }
@@ -57,7 +57,7 @@ use bencode_lib::{BufferSource, BufferDestination, parse, stringify};
 
 fn main() -> Result<(), String> {
 let raw = b"d3:foo3:bar4:spamli1ei2ei3eee".to_vec();
-let mut src = BufferSource::new(raw);
+let mut src = BufferSource::new(&raw);
 
     // Parse from memory
     let node = parse(&mut src)?;
