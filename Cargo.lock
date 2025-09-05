@@ -3,6 +3,13 @@
 version = 4
 
 [[package]]
+name = "bencode_create_at_runtime"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
 name = "bencode_fibonacci"
 version = "0.1.0"
 dependencies = [
