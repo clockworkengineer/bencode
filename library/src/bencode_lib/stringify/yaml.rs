@@ -3,6 +3,7 @@
 
 use crate::bencode_lib::nodes::node::*;
 use crate::bencode_lib::io::traits::IDestination;
+use crate::bencode_lib::stringify::common::escape_string;
 
 /// Writes the specified number of indentation spaces to the destination.
 ///
@@ -28,18 +29,7 @@ fn write_node(node: &Node, level: usize, destination: &mut dyn IDestination) {
         // Write strings with quotes and proper UTF-8 encoding
         Node::Str(s) => {
             destination.add_byte(b'"');
-            for &byte in s.as_bytes() {
-                if byte == b'"' || byte == b'\\' {
-                    destination.add_byte(b'\\');
-                    destination.add_byte(byte);
-                } else if byte.is_ascii_graphic() || byte == b' ' {
-                    destination.add_byte(byte);
-                } else {
-                    // Convert unprintable characters to \u escape sequence
-                    let escaped = format!("\\u{:04x}", byte);
-                    destination.add_bytes(&escaped);
-                }
-            }
+            escape_string(&s, destination);
             destination.add_byte(b'"');
         },
         // Write lists with proper YAML array formatting

@@ -1,5 +1,6 @@
 use crate::bencode_lib::io::traits::IDestination;
 use crate::bencode_lib::nodes::node::*;
+use crate::bencode_lib::stringify::common::escape_string;
 
 /// Converts a bencode Node into XML format and writes it to the given destination.
 /// Each node type is wrapped in appropriate XML tags based on its type.
@@ -12,18 +13,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
         Node::Str(value) => {
             // Wrap string value in <string> tags
             destination.add_bytes("<string>");
-            for &byte in value.as_bytes() {
-                if byte == b'"' || byte == b'\\' {
-                    destination.add_byte(b'\\');
-                    destination.add_byte(byte);
-                } else if byte.is_ascii_graphic() || byte == b' ' {
-                    destination.add_byte(byte);
-                } else {
-                    // Convert unprintable characters to \u escape sequence
-                    let escaped = format!("\\u{:04x}", byte);
-                    destination.add_bytes(&escaped);
-                }
-            }
+            escape_string(&value, destination);
             destination.add_bytes("</string>");
         }
         Node::Integer(value) => {

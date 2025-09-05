@@ -1,5 +1,6 @@
 use crate::bencode_lib::nodes::node::*;
 use crate::bencode_lib::io::traits::IDestination;
+use crate::bencode_lib::stringify::common::escape_string;
 
 /// Converts a Node structure into a JSON string representation and writes it to the given destination.
 /// Handles different node types (Integer, String, List, Dictionary) according to JSON format rules.
@@ -16,18 +17,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
         // Format a string value as JSON by wrapping it in double quotes
         Node::Str(value) => {
             destination.add_byte(b'"');
-            for &byte in value.as_bytes() {
-                if byte == b'"' || byte == b'\\' {
-                    destination.add_byte(b'\\');
-                    destination.add_byte(byte);
-                } else if byte.is_ascii_graphic() || byte == b' ' {
-                    destination.add_byte(byte);
-                } else {
-                    // Convert unprintable characters to \u escape sequence 
-                    let escaped = format!("\\u{:04x}", byte);
-                    destination.add_bytes(&escaped);
-                }
-            }
+            escape_string(&value, destination);
             destination.add_byte(b'"');
         }
         Node::List(items) => {
