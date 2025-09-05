@@ -30,7 +30,7 @@ fn main() {
     // Info dictionary (nested)
     root.insert("info".to_string(), build_info_dict());
 
-    // Optional: top-level "url-list" as list or single string
+    // Optional: top-level "url-list" as a list or single string
     root.insert(
         "url-list".to_string(),
         Node::List(vec![
