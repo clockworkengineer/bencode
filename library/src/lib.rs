@@ -18,6 +18,7 @@ pub use bencode_lib::io::destinations::file::File as FileDestination;
 
 /// Core data structure representing a bencode node in the parsed tree
 pub use bencode_lib::nodes::node::Node as Node;
+pub use bencode_lib::nodes::node::make_node as make_node;
 
 /// Converts a Node tree back to bencode format
 pub use bencode_lib::stringify::default::stringify as stringify;
