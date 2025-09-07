@@ -77,16 +77,16 @@ rust
 use bencode_lib::{Node, to_json, BufferDestination};
 
 fn main() {
-let node = Node::Dict(vec![
-(b"info".to_vec(), Node::List(vec![
-Node::Integer(42),
-Node::String(b"hello".to_vec()),
-])),
-]);
+    let mut map = std::collections::HashMap::new();
+    map.insert("info".to_string(), Node::List(vec![
+        Node::Integer(42),
+        Node::Str("hello".to_string()),
+    ]));
+    let node = Node::Dictionary(map);
 
     let mut dst = BufferDestination::new();
     to_json(&node, &mut dst);
-    let json = String::from_utf8(dst.into_bytes()).unwrap();
+    let json = dst.to_string();
     println!("{}", json);
 }
 ```
@@ -96,10 +96,10 @@ rust
 use bencode_lib::{read_file, write_file, Node};
 
 fn main() -> Result<(), String> {
-let node = read_file("input.bencode")?;
-// ... mutate or inspect `node` ...
-write_file("output.bencode", &node)?;
-Ok(())
+    let node = read_file("input.bencode").map_err(|e| e.to_string())?;
+    // ... mutate or inspect `node` ...
+    write_file("output.bencode", &node).map_err(|e| e.to_string())?;
+    Ok(())
 }
 ```
 ## Data model

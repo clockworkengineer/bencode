@@ -37,15 +37,15 @@ use bencode_lib::{FileSource, FileDestination, parse, to_yaml};
 use std::path::Path;
 
 fn main() -> Result<(), String> {
-    let input_path = "example.torrent";
-    let output_path = Path::new(input_path).with_extension("yaml");
+let input_path = "example.torrent";
+let output_path = Path::new(input_path).with_extension("yaml");
 
     // Read and parse bencode
-    let mut src = FileSource::new(input_path).map_err(|e| e.to_string())?;
+    let mut src = FileSource::new(input_path)?;
     let node = parse(&mut src)?;
 
     // Convert to YAML and write out
-    let mut dst = FileDestination::new(output_path.to_string_lossy().as_ref()).map_err(|e| e.to_string())?;
+    let mut dst = FileDestination::new(output_path.to_string_lossy().as_ref())?;
     to_yaml(&node, &mut dst);
     Ok(())
 }
@@ -57,7 +57,7 @@ use bencode_lib::{BufferSource, BufferDestination, parse, stringify};
 
 fn main() -> Result<(), String> {
 let raw = b"d3:foo3:bar4:spamli1ei2ei3eee".to_vec();
-let mut src = BufferSource::new(&raw);
+let mut src = BufferSource::new(raw);
 
     // Parse from memory
     let node = parse(&mut src)?;
@@ -77,16 +77,16 @@ rust
 use bencode_lib::{Node, to_json, BufferDestination};
 
 fn main() {
-let node = Node::Dict(vec![
-(b"info".to_vec(), Node::List(vec![
-Node::Integer(42),
-Node::String(b"hello".to_vec()),
-])),
-]);
+    let mut map = std::collections::HashMap::new();
+    map.insert("info".to_string(), Node::List(vec![
+        Node::Integer(42),
+        Node::Str("hello".to_string()),
+    ]));
+    let node = Node::Dictionary(map);
 
     let mut dst = BufferDestination::new();
     to_json(&node, &mut dst);
-    let json = String::from_utf8(dst.into_bytes()).unwrap();
+    let json = dst.to_string();
     println!("{}", json);
 }
 ```
@@ -96,10 +96,10 @@ rust
 use bencode_lib::{read_file, write_file, Node};
 
 fn main() -> Result<(), String> {
-let node = read_file("input.bencode")?;
-// ... mutate or inspect `node` ...
-write_file("output.bencode", &node)?;
-Ok(())
+    let node = read_file("input.bencode").map_err(|e| e.to_string())?;
+    // ... mutate or inspect `node` ...
+    write_file("output.bencode", &node).map_err(|e| e.to_string())?;
+    Ok(())
 }
 ```
 ## Data model
