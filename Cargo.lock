@@ -32,16 +32,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "bencode_torrent_to_json"
-version = "0.1.3"
-dependencies = [
- "bencode_lib",
- "bencode_utility_lib",
-]
-
-[[package]]
-name = "bencode_torrent_to_xml"
-version = "0.1.3"
+name = "bencode_torrent_to_toml"
+version = "0.1.0"
 dependencies = [
  "bencode_lib",
  "bencode_utility_lib",

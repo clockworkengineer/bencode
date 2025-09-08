@@ -10,4 +10,7 @@ pub mod yaml;
 /// Module for converting bencode data structures into XML format.
 /// Enables integration with XML-based systems and tools.
 pub mod xml;
+/// Module for converting bencode data structures into TOML format.
+/// Enables representation of bencode data in a human-readable configuration format.
+pub mod toml;
 mod common;

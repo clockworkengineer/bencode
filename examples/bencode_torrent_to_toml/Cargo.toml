@@ -1,0 +1,8 @@
+[package]
+name = "bencode_torrent_to_toml"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bencode_lib= { path =  "../../library/" }
+bencode_utility_lib= { path =  "../bencode_utility_lib/" }
