@@ -16,7 +16,7 @@ pub mod misc;
 pub mod error;
 
 ///
-/// Bencode API
+/// Bencode_lib API
 ///
 
 /// Returns the current version of the bencode library
