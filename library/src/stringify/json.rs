@@ -1,6 +1,6 @@
-use crate::bencode_lib::nodes::node::*;
-use crate::bencode_lib::io::traits::IDestination;
-use crate::bencode_lib::stringify::common::escape_string;
+use crate::nodes::node::*;
+use crate::io::traits::IDestination;
+use crate::stringify::common::escape_string;
 
 /// Converts a Node structure into a JSON string representation and writes it to the given destination.
 /// Handles different node types (Integer, String, List, Dictionary) according to JSON format rules.
@@ -52,7 +52,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bencode_lib::io::destinations::buffer::Buffer;
+    use crate::io::destinations::buffer::Buffer;
 
     #[test]
     fn stringify_integer_works() {

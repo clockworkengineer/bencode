@@ -1,9 +1,9 @@
 //! YAML serialization functionality for Bencode nodes.
 //! Provides methods to convert Bencode data structures into YAML formatted output.
 
-use crate::bencode_lib::nodes::node::*;
-use crate::bencode_lib::io::traits::IDestination;
-use crate::bencode_lib::stringify::common::escape_string;
+use crate::nodes::node::*;
+use crate::io::traits::IDestination;
+use crate::stringify::common::escape_string;
 
 /// Writes the specified number of indentation spaces to the destination.
 ///
@@ -79,7 +79,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bencode_lib::io::destinations::buffer::Buffer;
+    use crate::io::destinations::buffer::Buffer;
 
     #[test]
     fn stringify_empty_list_works() {

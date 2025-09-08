@@ -1,6 +1,6 @@
-use crate::bencode_lib::io::traits::IDestination;
-use crate::bencode_lib::nodes::node::*;
-use crate::bencode_lib::stringify::common::escape_string;
+use crate::io::traits::IDestination;
+use crate::nodes::node::*;
+use crate::stringify::common::escape_string;
 
 /// Converts a bencode Node into XML format and writes it to the given destination.
 /// Each node type is wrapped in appropriate XML tags based on its type.
@@ -49,7 +49,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bencode_lib::io::destinations::buffer::Buffer;
+    use crate::io::destinations::buffer::Buffer;
 
     #[test]
     fn test_string_node() {

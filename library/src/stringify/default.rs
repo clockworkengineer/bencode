@@ -1,8 +1,8 @@
 //! Module providing functionality to convert bencode nodes into their string representation.
 //! Implements the bencode encoding rules for different node types.
 
-use crate::bencode_lib::nodes::node::*;
-use crate::bencode_lib::io::traits::IDestination;
+use crate::nodes::node::*;
+use crate::io::traits::IDestination;
 
 /// Converts a bencode Node into its string representation and writes it to the destination.
 ///

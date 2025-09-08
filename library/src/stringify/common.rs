@@ -1,4 +1,4 @@
-use crate::bencode_lib::io::traits::IDestination;
+use crate::io::traits::IDestination;
 
 /// Escapes and writes a string value to the destination, handling special characters
 /// and converting unprintable characters to \u escape sequences.
@@ -24,7 +24,7 @@ pub(crate) fn escape_string(value: &str, destination: &mut dyn IDestination) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bencode_lib::io::destinations::buffer::Buffer;
+    use crate::io::destinations::buffer::Buffer;
 
     #[test]
     fn test_escape_regular_string() {

@@ -1,7 +1,7 @@
 //! This example demonstrates how to create a complex Bencode data structure at runtime.
 //! It shows various nested structures commonly found in torrent files.
 
-use bencode_lib::bencode_lib::nodes::node::Node;
+use bencode_lib::nodes::node::Node;
 use bencode_lib::make_node;
 use std::collections::HashMap;
 

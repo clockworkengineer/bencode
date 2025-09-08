@@ -1,10 +1,10 @@
 //! Default parser implementation for bencode format.
 //! Provides functionality to parse bencode-encoded data into Node structures.
 
-use crate::bencode_lib::nodes::node::Node;
+use crate::nodes::node::Node;
 use std::collections::HashMap;
-use crate::bencode_lib::io::traits::ISource;
-use crate::bencode_lib::error::messages::*;
+use crate::io::traits::ISource;
+use crate::error::messages::*;
 
 /// Parses bencode data from the given source into a Node structure.
 /// Handles integers, strings, lists, and dictionaries based on their prefix character.

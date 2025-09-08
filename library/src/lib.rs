@@ -1,32 +1,43 @@
-pub mod bencode_lib;
+/// Module defining the core data structures for representing bencode nodes
+pub mod nodes;
+/// Module providing input/output operations for reading and writing bencode data
+pub mod io;
+/// Module containing the parsing logic to decode bencode format into data structures
+pub mod parser;
+/// Module implementing serialization of data structures back to bencode format
+pub mod stringify;
+/// Module containing utility functions and helper methods
+pub mod misc;
+/// Module defining custom error types and error handling functionality
+pub mod error;
 
 /// Returns the current version of the bencode library
-pub use bencode_lib::misc::get_version as version;
+pub use misc::get_version as version;
 /// Reads and parses a bencode-encoded file from disk
-pub use bencode_lib::misc::read_bencode_file as read_file;
+pub use misc::read_bencode_file as read_file;
 /// Writes bencode-encoded data to a file on disk
-pub use bencode_lib::misc::write_bencode_file as write_file;
+pub use misc::write_bencode_file as write_file;
 
 /// Source implementation for reading bencode data from a memory buffer
-pub use bencode_lib::io::sources::buffer::Buffer as BufferSource;
+pub use io::sources::buffer::Buffer as BufferSource;
 /// Destination implementation for writing bencode data to a memory buffer
-pub use bencode_lib::io::destinations::buffer::Buffer as BufferDestination;
+pub use io::destinations::buffer::Buffer as BufferDestination;
 /// Source implementation for reading bencode data from a file
-pub use bencode_lib::io::sources::file::File as FileSource;
+pub use io::sources::file::File as FileSource;
 /// Destination implementation for writing bencode data to a file
-pub use bencode_lib::io::destinations::file::File as FileDestination;
+pub use io::destinations::file::File as FileDestination;
 
 /// Core data structure representing a bencode node in the parsed tree
-pub use bencode_lib::nodes::node::Node as Node;
-pub use bencode_lib::nodes::node::make_node as make_node;
+pub use nodes::node::Node as Node;
+pub use nodes::node::make_node as make_node;
 
 /// Converts a Node tree back to bencode format
-pub use bencode_lib::stringify::default::stringify as stringify;
+pub use stringify::default::stringify as stringify;
 /// Parses bencode data into a Node tree structure
-pub use bencode_lib::parser::default::parse as parse;
+pub use parser::default::parse as parse;
 /// Converts a Node tree to JSON format
-pub use bencode_lib::stringify::json::stringify as to_json;
+pub use stringify::json::stringify as to_json;
 /// Converts a Node tree to YAML format
-pub use bencode_lib::stringify::yaml::stringify as to_yaml;
+pub use stringify::yaml::stringify as to_yaml;
 /// Converts a Node tree to XML format
-pub use bencode_lib::stringify::xml::stringify as to_xml;
+pub use stringify::xml::stringify as to_xml;
