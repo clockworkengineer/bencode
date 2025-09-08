@@ -1,3 +1,7 @@
+/// A Rust library for encoding and decoding data in the Bencode format, commonly used in BitTorrent files.
+/// This library provides functionality to parse, create, modify and serialize bencode data structures
+/// with support for various formats including JSON, YAML and XML conversion.
+
 /// Module defining the core data structures for representing bencode nodes
 pub mod nodes;
 /// Module providing input/output operations for reading and writing bencode data
@@ -11,9 +15,13 @@ pub mod misc;
 /// Module defining custom error types and error handling functionality
 pub mod error;
 
+///
+/// Bencode API
+///
+
 /// Returns the current version of the bencode library
 pub use misc::get_version as version;
-/// Reads and parses a bencode-encoded file from disk
+/// Reads and parses a bencode-encoded file from disc
 pub use misc::read_bencode_file as read_file;
 /// Writes bencode-encoded data to a file on disk
 pub use misc::write_bencode_file as write_file;
