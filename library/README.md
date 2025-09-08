@@ -108,25 +108,25 @@ fn main() -> Result<(), String> {
 - String (byte string): `Node::String(Vec<u8>)`
 - List: `Node::List(Vec<Node>)`
 - Dictionary: `Node::Dict(Vec<(Vec<u8>, Node)>)`
-    - Keys are byte strings (raw bytes) to preserve exact data.
+  - Keys are byte strings (raw bytes) to preserve exact data.
 
 ## API overview
 
 - Sources/Destinations
-    - `FileSource`, `FileDestination`
-    - `BufferSource`, `BufferDestination`
+  - `FileSource`, `FileDestination`
+  - `BufferSource`, `BufferDestination`
 - Core
-    - `Node` — in‑memory representation of Bencode
-    - `parse(&mut Source) -> Result<Node, String>`
-    - `stringify(&Node, &mut Destination)`
+  - `Node` — in‑memory representation of Bencode
+  - `parse(&mut Source) -> Result<Node, String>`
+  - `stringify(&Node, &mut Destination)`
 - Converters
-    - `to_json(&Node, &mut Destination)`
-    - `to_yaml(&Node, &mut Destination)`
-    - `to_xml(&Node, &mut Destination)`
+  - `to_json(&Node, &mut Destination)`
+  - `to_yaml(&Node, &mut Destination)`
+  - `to_xml(&Node, &mut Destination)`
 - Utilities
-    - `version() -> String` — library version
-    - `read_file(path) -> Result<Node, String>`
-    - `write_file(path, &Node) -> Result<(), String>`
+  - `version() -> String` — library version
+  - `read_file(path) -> Result<Node, String>`
+  - `write_file(path, &Node) -> Result<(), String>`
 
 ## Error handling
 
