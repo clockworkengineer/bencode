@@ -7,6 +7,29 @@ use crate::io::traits::ISource;
 use crate::error::messages::*;
 use crate::Node::Dictionary;
 
+/// Parses the length prefix of a bencode string, expecting digits followed by ':'.
+/// Reads characters until ':' is found and converts them to a numeric length.
+///
+/// # Arguments
+/// * `source` - The source containing the string length to parse
+///
+/// # Returns
+/// * `Result<usize, String>` - Parsed length value or error message
+fn parse_string_length(source: &mut dyn ISource) -> Result<usize, String> {
+    let mut length = String::new();
+    while let Some(c) = source.current() {
+        if c == ':' {
+            source.next();
+            break;
+        }
+        length.push(c);
+        source.next();
+    }
+
+    length.parse::<usize>()
+        .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())
+}
+
 /// Parses bencode data from the given source into a Node structure.
 /// Handles integers, strings, lists, and dictionaries based on their prefix character.
 ///
@@ -64,20 +87,9 @@ fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
 /// # Returns
 /// * `Result<Node, String>` - String Node or error message
 fn parse_string(source: &mut dyn ISource) -> Result<Node, String> {
-    let mut length = String::new();
-    while let Some(c) = source.current() {
-        if c == ':' {
-            source.next();
-            break;
-        }
-        length.push(c);
-        source.next();
-    }
 
-    let len = length.parse::<usize>()
-        .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())?;
     let mut string = String::new();
-    for _ in 0..len {
+    for _ in 0.. parse_string_length(source)? {
         if let Some(c) = source.current() {
             string.push(c);
             source.next();
@@ -176,7 +188,7 @@ mod tests {
     fn parse_dictionary_works() {
         let mut source = BufferSource::new(b"d4:testi32ee");
         match parse(&mut source) {
-            Ok(Node::Dictionary(dict)) => {
+            Ok(Dictionary(dict)) => {
                 assert_eq!(dict.len(), 1);
                 assert!(matches!(dict.get("test"), Some(Node::Integer(32))));
             }
@@ -253,7 +265,7 @@ mod tests {
     fn parse_empty_dictionary_works() {
         let mut source = BufferSource::new(b"de");
         match parse(&mut source) {
-            Ok(Node::Dictionary(dict)) => {
+            Ok(Dictionary(dict)) => {
                 assert_eq!(dict.len(), 0);
             }
             _ => { assert_eq!(false, true); }
@@ -290,7 +302,7 @@ mod tests {
         let mut source = BufferSource::new(b"d3:foo3:bar5:hello5:world4:test5:valuee");
         let result = parse(&mut source);
         assert!(result.is_ok());
-        if let Ok(Node::Dictionary(map)) = result {
+        if let Ok(Dictionary(map)) = result {
             assert_eq!(map.len(), 3);
             assert_eq!(map.get("foo").unwrap(), &Node::Str("bar".to_string()));
             assert_eq!(map.get("test").unwrap(), &Node::Str("value".to_string()));
@@ -317,16 +329,15 @@ mod tests {
         let mut source = BufferSource::new(b":");
         assert!(matches!(parse(&mut source), Err(s) if s == ERR_INVALID_STRING_LENGTH));
     }
-
     #[test]
     fn test_zero_length_string() {
         let mut source = BufferSource::new(b"0:");
         assert!(matches!(parse(&mut source), Ok(Node::Str(s)) if s.is_empty()));
     }
-
     #[test]
     fn test_invalid_string_length() {
         let mut source = BufferSource::new(b"a:test");
         assert!(matches!(parse(&mut source), Err(s) if s.contains("Unexpected character")));
     }
+
 }
