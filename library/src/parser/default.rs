@@ -7,6 +7,14 @@ use crate::io::traits::ISource;
 use crate::error::messages::*;
 use crate::Node::Dictionary;
 
+const INTEGER_START: char = 'i';
+const INTEGER_END: char = 'e';
+const LIST_START: char = 'l';
+const LIST_END: char = 'e';
+const DICT_START: char = 'd';
+const DICT_END: char = 'e';
+const STRING_SEPARATOR: char = ':';
+
 /// Parses the length prefix of a bencode string, expecting digits followed by ':'.
 /// Reads characters until ':' is found and converts them to a numeric length.
 ///
@@ -18,7 +26,7 @@ use crate::Node::Dictionary;
 fn parse_string_length(source: &mut dyn ISource) -> Result<usize, String> {
     let mut length = String::new();
     while let Some(c) = source.current() {
-        if c == ':' {
+        if c == STRING_SEPARATOR {
             source.next();
             break;
         }
@@ -40,11 +48,11 @@ fn parse_string_length(source: &mut dyn ISource) -> Result<usize, String> {
 /// * `Result<Node, String>` - Parsed Node or error message
 pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
     match source.current() {
-        Some('i') => parse_integer(source),
-        Some('l') => parse_list(source),
-        Some('d') => parse_dictionary(source),
+        Some(INTEGER_START) => parse_integer(source),
+        Some(LIST_START) => parse_list(source),
+        Some(DICT_START) => parse_dictionary(source),
         Some('0'..='9') => parse_string(source),
-        Some(':') => Err(ERR_INVALID_STRING_LENGTH.to_string()),
+        Some(STRING_SEPARATOR) => Err(ERR_INVALID_STRING_LENGTH.to_string()),
         Some(c) => Err(unexpected_character(c)),
         None => Err(ERR_EMPTY_INPUT
             .to_string())
@@ -63,7 +71,7 @@ fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'i'
     let mut number = String::new();
     while let Some(c) = source.current() {
-        if c == 'e' {
+        if c == INTEGER_END {
             source.next();
             if number == "-0" {
                 return Err(ERR_INVALID_INTEGER.to_string());
@@ -112,7 +120,7 @@ fn parse_list(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'l'
     let mut list = Node::List(vec![]);
     while let Some(c) = source.current() {
-        if c == 'e' {
+        if c == LIST_END {
             source.next();
             return Ok(list);
         }
@@ -134,7 +142,7 @@ fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
     let mut dict = Dictionary(HashMap::new());
     let mut last_key = String::new();
     while let Some(c) = source.current() {
-        if c == 'e' {
+        if c == DICT_END {
             source.next();
             return Ok(dict);
         }
