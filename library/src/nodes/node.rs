@@ -383,4 +383,51 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_add_to_list() {
+        let mut node = Node::List(Vec::new());
+        node.add_to_list(Node::Integer(42));
+        match node {
+            Node::List(list) => assert_eq!(list[0], Node::Integer(42)),
+            _ => assert_eq!(false, true),
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "Can't push to a non-list node")]
+    fn test_add_to_list_panic() {
+        let mut node = Node::Integer(0);
+        node.add_to_list(Node::Integer(42));
+    }
+
+    #[test]
+    fn test_add_to_dictionary() {
+        let mut node = Node::Dictionary(HashMap::new());
+        node.add_to_dictionary("test", Node::Integer(42));
+        match node {
+            Node::Dictionary(dict) => assert_eq!(dict["test"], Node::Integer(42)),
+            _ => assert_eq!(false, true),
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "Can't push to a non-list node")]
+    fn test_add_to_dictionary_panic() {
+        let mut node = Node::Integer(0);
+        node.add_to_dictionary("test", Node::Integer(42));
+    }
+
+    #[test]
+    fn test_from_i64() {
+        let value: i64 = 42;
+        let node = Node::from(value);
+        assert_eq!(node, Node::Integer(42));
+    }
+
+    #[test]
+    fn test_clone_node() {
+        let original = Node::Integer(42);
+        let cloned = original.clone();
+        assert_eq!(original, cloned);
+    }
 }
