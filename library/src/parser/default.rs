@@ -5,6 +5,7 @@ use crate::nodes::node::Node;
 use std::collections::HashMap;
 use crate::io::traits::ISource;
 use crate::error::messages::*;
+use crate::Node::Dictionary;
 
 /// Parses bencode data from the given source into a Node structure.
 /// Handles integers, strings, lists, and dictionaries based on their prefix character.
@@ -97,13 +98,13 @@ fn parse_string(source: &mut dyn ISource) -> Result<Node, String> {
 /// * `Result<Node, String>` - List Node or error message
 fn parse_list(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'l'
-    let mut list = Vec::new();
+    let mut list = Node::List(vec![]);
     while let Some(c) = source.current() {
         if c == 'e' {
             source.next();
-            return Ok(Node::List(list));
+            return Ok(list);
         }
-        list.push(parse(source)?);
+        list.add_to_list(parse(source)?);
     }
     Err(ERR_UNTERMINATED_LIST.to_string())
 }
@@ -118,12 +119,12 @@ fn parse_list(source: &mut dyn ISource) -> Result<Node, String> {
 /// * `Result<Node, String>` - Dictionary Node or error message
 fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'd'
-    let mut dict = HashMap::new();
+    let mut dict = Dictionary(HashMap::new());
     let mut last_key = String::new();
     while let Some(c) = source.current() {
         if c == 'e' {
             source.next();
-            return Ok(Node::Dictionary(dict));
+            return Ok(dict);
         }
         match parse_string(source) {
             Ok(Node::Str(key)) => {
@@ -132,7 +133,7 @@ fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
                 }
                 last_key = key.clone();
                 let value = parse(source)?;
-                dict.insert(key, value);
+                dict.add_to_dictionary(&key, value);
             }
             _ => return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string())
 

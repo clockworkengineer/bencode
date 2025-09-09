@@ -15,6 +15,22 @@ pub enum Node {
     None,
 }
 
+impl Node {
+    pub(crate) fn add_to_list(&mut self, p0: Node) {
+        match self {
+            Node::List(list) => list.push(p0),
+            _ => panic!("Can't push to a non-list node"),
+        }
+    }
+
+    pub(crate) fn add_to_dictionary(&mut self, key :&str, p0: Node) {
+        match self {
+            Node::Dictionary(dict) => { let _ = dict.insert(key.to_string(), p0); }
+            _ => panic!("Can't push to a non-list node"),
+        }
+    }
+}
+
 /// Converts a vector of values into a List node
 impl<T: Into<Node>> From<Vec<T>> for Node {
     fn from(value: Vec<T>) -> Self {
