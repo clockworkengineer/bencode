@@ -21,7 +21,7 @@ fn process_torrent_file(file_path: &str) -> Result<(), String> {
     // Create a destination writer for the TOML file with the same name but .TOML extension
     let mut destination = FileDestination::new(Path::new(file_path).with_extension("toml").to_string_lossy().as_ref()).map_err(|e| e.to_string())?;
     // Write the parsed data as TOML to the destination file
-    to_toml(&node, &mut destination);
+    to_toml(&node, &mut destination)?;
     Ok(())
 }
 

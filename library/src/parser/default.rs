@@ -8,19 +8,33 @@ use crate::error::messages::*;
 use crate::Node::Dictionary;
 
 
-/// Marker character that indicates the start of an integer value
+/// Start marker for bencode integer values ('i')
+/// Format: i<digits>e
+/// Examples: i42e, i-42e, i0e
 const INTEGER_START: char = 'i';
-/// Marker character that indicates the end of an integer value
+/// End marker for bencode integer values ('e')
+/// Terminates an integer value started with INTEGER_START
+/// Examples: i42e, i-42e, i0e
 const INTEGER_END: char = 'e';
-/// Marker character that indicates the start of a list
+/// Start marker for bencode list values ('l')
+/// Format: l<bencoded values>e
+/// Examples: le (empty list), li1ei2ee (list of integers)
 const LIST_START: char = 'l';
-/// Marker character that indicates the end of a list
+/// End marker for bencode list values ('e')
+/// Terminates a list started with LIST_START
+/// Examples: le (empty list), li1ei2ee (list of integers)
 const LIST_END: char = 'e';
-/// Marker character that indicates the start of a dictionary
+/// Start marker for bencode dictionary values ('d')
+/// Format: d<bencoded string><bencoded value>...e
+/// Examples: de (empty dict), d3:foo3:bare (single key-value)
 const DICT_START: char = 'd';
-/// Marker character that indicates the end of a dictionary
+/// End marker for bencode dictionary values ('e')
+/// Terminates a dictionary started with DICT_START
+/// Examples: de (empty dict), d3:foo3:bare (single key-value)
 const DICT_END: char = 'e';
-/// Character that separates string length from string content
+/// Separator between string length and content (':')
+/// Format: <length>:<bytes>
+/// Examples: 4:test, 0:, 5:hello
 const STRING_SEPARATOR: char = ':';
 
 /// Parses the length prefix of a bencode string, expecting digits followed by ':'.
