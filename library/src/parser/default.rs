@@ -7,12 +7,20 @@ use crate::io::traits::ISource;
 use crate::error::messages::*;
 use crate::Node::Dictionary;
 
+
+/// Marker character that indicates the start of an integer value
 const INTEGER_START: char = 'i';
+/// Marker character that indicates the end of an integer value
 const INTEGER_END: char = 'e';
+/// Marker character that indicates the start of a list
 const LIST_START: char = 'l';
+/// Marker character that indicates the end of a list
 const LIST_END: char = 'e';
+/// Marker character that indicates the start of a dictionary
 const DICT_START: char = 'd';
+/// Marker character that indicates the end of a dictionary
 const DICT_END: char = 'e';
+/// Character that separates string length from string content
 const STRING_SEPARATOR: char = ':';
 
 /// Parses the length prefix of a bencode string, expecting digits followed by ':'.
