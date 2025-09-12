@@ -8,7 +8,7 @@ use crate::stringify::common::escape_string;
 /// # Arguments
 /// * `node` - The Node structure to convert
 /// * `destination` - The destination to write the JSON output to
-pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
+pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
     
     match node {
         Node::Integer(value) => {
@@ -26,7 +26,7 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
                 if index > 0 {
                     destination.add_byte(b',');
                 }
-                stringify(item, destination);
+                stringify(item, destination)?;
             }
             destination.add_byte(b']');
         }
@@ -41,12 +41,13 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
                 destination.add_byte(b'"');
                 destination.add_bytes(key);
                 destination.add_bytes("\":");
-                stringify(value, destination);
+                stringify(value, destination)?;
             }
             destination.add_byte(b'}');
         }
         _ => {}
     }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -57,14 +58,14 @@ mod tests {
     #[test]
     fn stringify_integer_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::Integer(42), &mut destination);
+        stringify(&Node::Integer(42), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "42");
     }
 
     #[test]
     fn stringify_string_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::Str("hello".to_string()), &mut destination);
+        stringify(&Node::Str("hello".to_string()), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "\"hello\"");
     }
 
@@ -75,7 +76,7 @@ mod tests {
             Node::Integer(1),
             Node::Integer(2),
             Node::Str("three".to_string()),
-        ]), &mut destination);
+        ]), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "[1,2,\"three\"]");
     }
 
@@ -85,24 +86,24 @@ mod tests {
         let mut dict = std::collections::HashMap::new();
         dict.insert("key1".to_string(), Node::Integer(1));
         dict.insert("key2".to_string(), Node::Str("value".to_string()));
-        stringify(&Node::Dictionary(dict), &mut destination);
+        stringify(&Node::Dictionary(dict), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "{\"key1\":1,\"key2\":\"value\"}");
     }
 
     #[test]
     fn stringify_empty_structures_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::List(vec![]), &mut destination);
+        stringify(&Node::List(vec![]), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "[]");
         destination.clear();
-        stringify(&Node::Dictionary(std::collections::HashMap::new()), &mut destination);
+        stringify(&Node::Dictionary(std::collections::HashMap::new()), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "{}");
     }
 
     #[test]
     fn stringify_unknown_node_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::None, &mut destination);
+        stringify(&Node::None, &mut destination).unwrap();
         assert_eq!(destination.to_string(), "");
     }
 
@@ -113,7 +114,7 @@ mod tests {
         dict.insert("z".to_string(), Node::Integer(1));
         dict.insert("a".to_string(), Node::Integer(2));
         dict.insert("m".to_string(), Node::Integer(3));
-        stringify(&Node::Dictionary(dict), &mut destination);
+        stringify(&Node::Dictionary(dict), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "{\"a\":2,\"m\":3,\"z\":1}");
     }
 
@@ -122,7 +123,7 @@ mod tests {
     //     let mut destination = Buffer::new();
     //     let mut dict = std::collections::HashMap::new();
     //     dict.insert("key:with\"special\\chars".to_string(), Node::Integer(1));
-    //     stringify(&Node::Dictionary(dict), &mut destination);
+    //     stringify(&Node::Dictionary(dict), &mut destination).unwrap();
     //     assert_eq!(destination.to_string(), "{\"key:with\\\"special\\\\chars\":1}");
     // }
 
@@ -137,7 +138,7 @@ mod tests {
             Node::Dictionary(inner_dict1),
             Node::Integer(42)
         ]));
-        stringify(&Node::Dictionary(inner_dict2), &mut destination);
+        stringify(&Node::Dictionary(inner_dict2), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "{\"y\":[\"a\",{\"x\":1},42]}");
     }
 
@@ -149,7 +150,7 @@ mod tests {
         inner_dict.insert("key".to_string(), Node::Str("value".to_string()));
         let dict = Node::Dictionary(inner_dict);
 
-        stringify(&Node::List(vec![inner_list, dict]), &mut destination);
+        stringify(&Node::List(vec![inner_list, dict]), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "[[1,2],{\"key\":\"value\"}]");
     }
     

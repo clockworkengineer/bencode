@@ -23,7 +23,7 @@ fn process_torrent_file(file_path: &str) -> Result<(), String> {
     // Create output YAML file with same name but .yaml extension
     let mut destination = FileDestination::new(Path::new(file_path).with_extension("yaml").to_string_lossy().as_ref()).map_err(|e| e.to_string())?;
     // Convert and write the data in YAML format
-    to_yaml(&node, &mut destination);
+    to_yaml(&node, &mut destination)?;
     Ok(())
 }
 

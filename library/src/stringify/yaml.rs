@@ -72,8 +72,9 @@ fn write_node(node: &Node, level: usize, destination: &mut dyn IDestination) {
 /// # Arguments
 /// * `node` - The root Bencode node to serialize
 /// * `destination` - The output destination to write the YAML to
-pub fn stringify(node: &Node, destination: &mut dyn IDestination) {
+pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
     write_node(node, 0, destination);
+    Ok(())
 }
 
 #[cfg(test)]
@@ -84,14 +85,14 @@ mod tests {
     #[test]
     fn stringify_empty_list_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::List(vec![]), &mut destination);
+        stringify(&Node::List(vec![]), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "[]");
     }
 
     #[test]
     fn stringify_list_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::List(vec![Node::Integer(1), Node::Integer(2)]), &mut destination);
+        stringify(&Node::List(vec![Node::Integer(1), Node::Integer(2)]), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "\n- 1\n- 2\n");
     }
 
@@ -99,7 +100,7 @@ mod tests {
     fn stringify_empty_dictionary_works() {
         let mut destination = Buffer::new();
         let dict = std::collections::HashMap::new();
-        stringify(&Node::Dictionary(dict), &mut destination);
+        stringify(&Node::Dictionary(dict), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "{}");
     }
 
@@ -108,28 +109,28 @@ mod tests {
         let mut destination = Buffer::new();
         let mut dict = std::collections::HashMap::new();
         dict.insert("key".to_string(), Node::Integer(1));
-        stringify(&Node::Dictionary(dict), &mut destination);
+        stringify(&Node::Dictionary(dict), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "\nkey: 1\n");
     }
 
     #[test]
     fn stringify_integer_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::Integer(42), &mut destination);
+        stringify(&Node::Integer(42), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "42");
     }
 
     #[test]
     fn stringify_string_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::Str(String::from("test")), &mut destination);
+        stringify(&Node::Str(String::from("test")), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "\"test\"");
     }
 
     #[test]
     fn stringify_nested_list_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::List(vec![Node::List(vec![Node::Integer(1)])]), &mut destination);
+        stringify(&Node::List(vec![Node::List(vec![Node::Integer(1)])]), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "\n- \n  - 1\n\n");
     }
 
@@ -140,7 +141,7 @@ mod tests {
         inner_dict.insert("inner".to_string(), Node::Integer(1));
         let mut outer_dict = std::collections::HashMap::new();
         outer_dict.insert("outer".to_string(), Node::Dictionary(inner_dict));
-        stringify(&Node::Dictionary(outer_dict), &mut destination);
+        stringify(&Node::Dictionary(outer_dict), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "\nouter: \n  inner: 1\n\n");
     }
 
@@ -150,7 +151,7 @@ mod tests {
         let mut dict = std::collections::HashMap::new();
         dict.insert("a".to_string(), Node::Integer(1));
         dict.insert("b".to_string(), Node::Integer(2));
-        stringify(&Node::Dictionary(dict), &mut destination);
+        stringify(&Node::Dictionary(dict), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "\na: 1\nb: 2\n");
     }
 
@@ -161,14 +162,14 @@ mod tests {
             Node::Integer(1),
             Node::Str("test".to_string()),
             Node::List(vec![])
-        ]), &mut destination);
+        ]), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "\n- 1\n- \"test\"\n- []\n");
     }
 
     #[test]
     fn stringify_unknown_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::None, &mut destination);
+        stringify(&Node::None, &mut destination).unwrap();
         assert_eq!(destination.to_string(), "unknown");
     }
 }
