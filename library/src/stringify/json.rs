@@ -38,14 +38,14 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), 
                 if index > 0 {
                     destination.add_byte(b',');
                 }
-                destination.add_byte(b'"');
+                destination.add_bytes("\"");
                 destination.add_bytes(key);
                 destination.add_bytes("\":");
                 stringify(value, destination)?;
             }
             destination.add_byte(b'}');
         }
-        _ => {}
+        Node::None => {destination.add_bytes("null");}
     }
     Ok(())
 }
@@ -104,7 +104,7 @@ mod tests {
     fn stringify_unknown_node_works() {
         let mut destination = Buffer::new();
         stringify(&Node::None, &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "");
+        assert_eq!(destination.to_string(), "null");
     }
 
     #[test]
@@ -153,6 +153,20 @@ mod tests {
         stringify(&Node::List(vec![inner_list, dict]), &mut destination).unwrap();
         assert_eq!(destination.to_string(), "[[1,2],{\"key\":\"value\"}]");
     }
-    
+    #[test]
+    fn stringify_list_with_none_works() {
+        let mut destination = Buffer::new();
+        let list = vec![Node::Integer(1), Node::None, Node::Integer(2)];
+        stringify(&Node::List(list), &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "[1,null,2]");
+    }
+    #[test]
+    fn stringify_dictionary_with_list_works() {
+        let mut destination = Buffer::new();
+        let mut dict = std::collections::HashMap::new();
+        dict.insert("list".to_string(), Node::List(vec![Node::Integer(1), Node::Integer(2)]));
+        stringify(&Node::Dictionary(dict), &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "{\"list\":[1,2]}");
+    }
 }
 

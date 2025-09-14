@@ -172,6 +172,7 @@ mod tests {
         stringify(&Node::None, &mut destination).unwrap();
         assert_eq!(destination.to_string(), "unknown");
     }
+
 }
 
 

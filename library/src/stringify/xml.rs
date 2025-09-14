@@ -143,4 +143,5 @@ mod tests {
             "<list><integer>1</integer><list><string>nested</string></list></list>"
         );
     }
+    
 }

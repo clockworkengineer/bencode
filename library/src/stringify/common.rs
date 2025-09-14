@@ -53,4 +53,5 @@ mod tests {
         escape_string("", &mut destination);
         assert_eq!(destination.to_string(), "");
     }
+
 }
