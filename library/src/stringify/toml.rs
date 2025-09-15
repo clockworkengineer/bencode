@@ -2,76 +2,79 @@ use crate::io::traits::IDestination;
 use crate::nodes::node::*;
 use crate::stringify::common::escape_string;
 
-fn write_value(node: &Node, destination: &mut dyn IDestination) {
-    match node {
-        Node::Str(value) => {
-            destination.add_byte(b'"');
-            escape_string(value, destination);
-            destination.add_byte(b'"');
-        }
-        Node::Integer(value) => {
-            destination.add_bytes(&value.to_string());
-        }
-        Node::List(items) => {
-            destination.add_byte(b'[');
-            let mut is_first = true;
-            for item in items {
-                if !is_first {
-                    destination.add_bytes(", ");
-                }
-                write_value(item, destination);
-                is_first = false;
-            }
-            destination.add_byte(b']');
-        }
-        Node::Dictionary(items) => {
-            let mut is_first = true;
-            for (key, value) in items {
-                if !is_first {
-                    destination.add_bytes(", ");
-                }
-                destination.add_bytes(key);
-                destination.add_bytes(" = ");
-                write_value(value, destination);
-                is_first = false;
-            }
-        }
-        Node::None => {
-            // In TOML, we'll represent None as null (though TOML doesn't officially support null)
-            destination.add_bytes("null");
-        }
-    }
-}
+
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
     match node {
-        Node::Dictionary(items) => {
-            let mut is_first = true;
-            for (key, value) in items {
-                match value {
-                    Node::Dictionary(_inner_dict) => {
-                        if !is_first {
-                            destination.add_byte(b'\n');
-                        }
-                        destination.add_bytes("\n[");
-                        destination.add_bytes(key);
-                        destination.add_bytes("]\n");
-                        stringify(value, destination)?;
-                    }
-                    _ => {
-                        if !is_first {
-                            destination.add_byte(b'\n');
-                        }
-                        destination.add_bytes(key);
-                        destination.add_bytes(" = ");
-                        write_value(value, destination);
-                    }
-                }
-                is_first = false;
-            }
-            Ok(())
-        }
+        Node::Dictionary(dict) => stringify_dictionary(dict, "", destination),
         _ => Err("TOML format requires a dictionary at the root level".to_string()),
     }
+}
+
+fn stringify_value(value: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
+    match value {
+        Node::Str(s) => {
+            destination.add_bytes("\"");
+            escape_string(s, destination);
+            destination.add_bytes("\"");
+        }
+        Node::Integer(i) => destination.add_bytes(&i.to_string()),
+        Node::List(items) => stringify_array(items, destination)?,
+        Node::None => destination.add_bytes("null"),
+        Node::Dictionary(_) => return Ok(()), // Handled separately for table syntax
+    }
+    Ok(())
+}
+
+fn stringify_array(items: &Vec<Node>, destination: &mut dyn IDestination) -> Result<(), String> {
+    destination.add_bytes("[");
+    for (i, item) in items.iter().enumerate() {
+        if i > 0 {
+            destination.add_bytes(", ");
+        }
+        stringify_value(item, destination)?;
+    }
+    destination.add_bytes("]");
+    Ok(())
+}
+
+fn stringify_dictionary(dict: &std::collections::HashMap<String, Node>, prefix: &str, destination: &mut dyn IDestination) -> Result<(), String> {
+    if dict.is_empty() {
+        return Ok(());
+    }
+
+    let mut tables = std::collections::HashMap::new();
+    let mut is_first = true;
+    // First pass - handle simple key-value pairs
+    for (key, value) in dict {
+        if let Node::Dictionary(nested) = value {
+            tables.insert(key, nested);
+        } else {
+            if !prefix.is_empty() && is_first {
+                destination.add_bytes("\n[");
+                destination.add_bytes(prefix);
+                destination.add_bytes("]\n");
+                is_first = false;
+            }
+            destination.add_bytes(key);
+            destination.add_bytes(" = ");
+            stringify_value(value, destination)?;
+            if !prefix.is_empty() {
+                destination.add_bytes("\n");
+            }
+        }
+    }
+
+    // Second pass - handle nested tables
+    for (key, nested) in tables {
+        let new_prefix = if prefix.is_empty() {
+            key.to_string()
+        } else {
+            format!("{}.{}", prefix, key)
+        };
+        stringify_dictionary(nested, &new_prefix, destination)?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -136,7 +139,7 @@ mod tests {
         stringify(&node, &mut destination).unwrap();
         assert_eq!(
             destination.to_string(),
-            "\n[outer_key]\ninner_key = \"inner_value\""
+            "\n[outer_key]\ninner_key = \"inner_value\"\n"
         );
     }
 
@@ -161,33 +164,33 @@ mod tests {
             "TOML format requires a dictionary at the root level"
         );
     }
-    // #[test]
-    // fn test_stringify_deeply_nested_dictionary() {
-    //     let mut level3 = HashMap::new();
-    //     level3.insert(
-    //         "deep_key".to_string(),
-    //         Node::Integer(123),
-    //     );
-    //     let level3 = Node::Dictionary(level3);
-    //
-    //     let mut level2 = HashMap::new();
-    //     level2.insert("level3".to_string(), level3);
-    //     let level2 = Node::Dictionary(level2);
-    //
-    //     let mut level1 = HashMap::new();
-    //     level1.insert("level2".to_string(), level2);
-    //     let level1 = Node::Dictionary(level1);
-    //
-    //     let mut root = HashMap::new();
-    //     root.insert("level1".to_string(), level1);
-    //
-    //     let mut dest = BufferDestination::new();
-    //     stringify(&Node::Dictionary(root), &mut dest).unwrap();
-    //     assert_eq!(
-    //         dest.to_string(),
-    //         "\n[level1.level2.level3]\ndeep_key = 123\n"
-    //     );
-    // }
+    #[test]
+    fn test_stringify_deeply_nested_dictionary() {
+        let mut level3 = HashMap::new();
+        level3.insert(
+            "deep_key".to_string(),
+            Node::Integer(123),
+        );
+        let level3 = Node::Dictionary(level3);
+
+        let mut level2 = HashMap::new();
+        level2.insert("level3".to_string(), level3);
+        let level2 = Node::Dictionary(level2);
+
+        let mut level1 = HashMap::new();
+        level1.insert("level2".to_string(), level2);
+        let level1 = Node::Dictionary(level1);
+
+        let mut root = HashMap::new();
+        root.insert("level1".to_string(), level1);
+
+        let mut dest = BufferDestination::new();
+        stringify(&Node::Dictionary(root), &mut dest).unwrap();
+        assert_eq!(
+            dest.to_string(),
+            "\n[level1.level2.level3]\ndeep_key = 123\n"
+        );
+    }
     #[test]
     fn test_stringify_empty_dictionary() {
         let mut dest = BufferDestination::new();
