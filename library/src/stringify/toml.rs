@@ -265,11 +265,14 @@ fn process_array_tables(array_tables: &BTreeMap<&String, &Vec<Node>>,
     for (key, items) in array_tables_sorted {
         for item in &**items {
             if let Node::Dictionary(nested) = item {
-                let new_prefix = calculate_prefix(prefix, key);
+                let new_prefix = calculate_prefix(prefix, &key);
                 destination.add_bytes("[[");
                 destination.add_bytes(&new_prefix);
                 destination.add_bytes("]]\n");
-                process_nested_array_table(nested, &new_prefix, destination)?;
+
+                let mut nested_clone = nested.clone();
+                nested_clone.remove(&(**key).clone());
+                process_nested_array_table(&nested_clone, &new_prefix, destination)?;
             }
         }
     }
