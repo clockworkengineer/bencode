@@ -1,6 +1,7 @@
 # bencode_lib
 
-A Rust library for parsing, constructing, and converting Bencode data. In addition to round‑tripping Bencode, it can render parsed data to JSON, YAML, and XML.
+A Rust library for parsing, constructing, and converting Bencode data. In addition to round‑tripping Bencode, it can
+render parsed data to JSON, YAML, XML, and TOML.
 
 Bencode is a compact serialization format commonly used by BitTorrent. It supports four types: integers, byte strings, lists, and dictionaries.
 
@@ -8,7 +9,7 @@ Bencode is a compact serialization format commonly used by BitTorrent. It suppor
 
 - Parse Bencode into a typed tree (`Node`)
 - Serialize `Node` back to canonical Bencode
-- Convert `Node` to JSON, YAML, or XML
+- Convert `Node` to JSON, YAML, XML, or TOML
 - Read/write from files or in‑memory buffers
 - Small, focused API
 
@@ -123,6 +124,7 @@ fn main() -> Result<(), String> {
   - `to_json(&Node, &mut Destination)`
   - `to_yaml(&Node, &mut Destination)`
   - `to_xml(&Node, &mut Destination)`
+  - `to_toml(&Node, &mut Destination)`
 - Utilities
   - `version() -> String` — library version
   - `read_file(path) -> Result<Node, String>`

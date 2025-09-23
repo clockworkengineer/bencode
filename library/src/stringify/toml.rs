@@ -540,7 +540,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_nested_array_tables() {
         let mut dest = BufferDestination::new();
         let mut deepest = HashMap::new();
