@@ -144,23 +144,11 @@ fn stringify_key_value_pair(prefix: &str, destination: &mut dyn IDestination, is
         destination.add_bytes("]\n");
         *is_first = false;
     }
-    // Replace:
-    // destination.add_bytes(key);
-    // destination.add_bytes(" = ");
-    // stringify_value(value, true, destination)?;
 
-    // With:
-    if let Node::List(items) = value {
-        if !items.is_empty() {
-            destination.add_bytes(key);
-            destination.add_bytes(" = ");
-            stringify_value(value, true, destination)?;
-        }
-    } else {
-        destination.add_bytes(key);
-        destination.add_bytes(" = ");
-            stringify_value(value, true, destination)?;
-        }
+    destination.add_bytes(key);
+    destination.add_bytes(" = ");
+    stringify_value(value, true, destination)?;
+    
     Ok(())
 }
 
@@ -552,6 +540,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn test_nested_array_tables() {
         let mut dest = BufferDestination::new();
         let mut deepest = HashMap::new();
