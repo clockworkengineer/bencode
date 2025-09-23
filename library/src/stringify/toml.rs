@@ -7,7 +7,7 @@
 //! - Nested structures are handled with proper table syntax
 //! - Array tables are supported for collections of objects
 //!
-//! The module ensures compliance with TOML specification including:
+//! The module ensures compliance with TOML specification including
 //! - Proper quoting of strings
 //! - Correct table and array table syntax
 //! - Type consistency in arrays
@@ -144,9 +144,23 @@ fn stringify_key_value_pair(prefix: &str, destination: &mut dyn IDestination, is
         destination.add_bytes("]\n");
         *is_first = false;
     }
-    destination.add_bytes(key);
-    destination.add_bytes(" = ");
-    stringify_value(value, true, destination)?;
+    // Replace:
+    // destination.add_bytes(key);
+    // destination.add_bytes(" = ");
+    // stringify_value(value, true, destination)?;
+
+    // With:
+    if let Node::List(items) = value {
+        if !items.is_empty() {
+            destination.add_bytes(key);
+            destination.add_bytes(" = ");
+            stringify_value(value, true, destination)?;
+        }
+    } else {
+        destination.add_bytes(key);
+        destination.add_bytes(" = ");
+            stringify_value(value, true, destination)?;
+        }
     Ok(())
 }
 
@@ -207,18 +221,17 @@ fn process_key_value_pairs<'a>(dict_sorted: &BTreeMap<&'a String, &'a Node>,
         match value {
             Node::Dictionary(nested) => {
                 tables.insert(key, nested);
+                continue
             }
             Node::List(items) => {
                 if items.iter().all(|item| matches!(item, Node::Dictionary(_))) {
                     array_tables.insert(key, items);
-                } else {
-                    stringify_key_value_pair(prefix, destination, is_first, key, value)?;
+                    continue;
                 }
             }
-            _ => {
-                stringify_key_value_pair(prefix, destination, is_first, key, value)?;
-            }
+            _ => {}
         }
+        stringify_key_value_pair(prefix, destination, is_first, key, value)?;
     }
     Ok(())
 }
@@ -312,20 +325,9 @@ fn process_simple_values(nested_sorted: &BTreeMap<&String, &Node>,
     for (inner_key, inner_value) in nested_sorted {
         match inner_value {
             Node::Dictionary(_) => {}
-            Node::List(items) => {
-                destination.add_bytes(inner_key);
-                destination.add_bytes(" = ");
-                stringify_array(items, destination)?;
-            destination.add_bytes("\n");}
-            Node::Str(inner_value) => {
-                destination.add_bytes(inner_key);
-                destination.add_bytes(" = ");
-                stringify_value(&Node::Str(inner_value.clone()), true, destination)?;
-            }
             _ => {
-                destination.add_bytes(inner_key);
-                destination.add_bytes(" = ");
-                stringify_value(inner_value, true, destination)?;
+                let mut is_first = true;
+                stringify_key_value_pair("", destination, &mut is_first, inner_key, inner_value)?;
             }
         }
     }
@@ -387,7 +389,6 @@ fn calculate_prefix(prefix: &str, key: &String) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // use crate::io::destinations::BufferDestination::Buffer;
     use crate::nodes::node::make_node;
     use std::collections::HashMap;
     use crate::BufferDestination;
