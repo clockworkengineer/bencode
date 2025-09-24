@@ -314,8 +314,13 @@ fn process_simple_values(nested_sorted: &BTreeMap<&String, &Node>,
         match inner_value {
             Node::Dictionary(_) => {}
             _ => {
-                let mut is_first = true;
-                stringify_key_value_pair("", destination, &mut is_first, inner_key, inner_value)?;
+                match inner_value {
+                    Node::Integer(_) | Node::Str(_) => {
+                        let mut is_first = true;
+                        stringify_key_value_pair("", destination, &mut is_first, inner_key, inner_value)?;
+                    }
+                    _ => {}
+                }
             }
         }
     }
