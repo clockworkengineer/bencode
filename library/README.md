@@ -21,7 +21,7 @@ Add to your Cargo.toml:
 ```
 toml
 [dependencies]
-bencode_lib = "0.1.4"
+bencode_lib = "0.1.5"
 ```
 - Or as a workspace/path dependency:
 ```

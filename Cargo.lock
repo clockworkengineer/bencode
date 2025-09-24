@@ -4,28 +4,28 @@ version = 4
 
 [[package]]
 name = "bencode_create_at_runtime"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_fibonacci"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_lib"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "rand",
 ]
 
 [[package]]
 name = "bencode_read_torrent_files"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "bencode_utility_lib",
  "torrent_file",
@@ -41,7 +41,7 @@ dependencies = [
 
 [[package]]
 name = "bencode_torrent_to_yaml"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "bencode_lib",
  "bencode_utility_lib",
@@ -49,7 +49,7 @@ dependencies = [
 
 [[package]]
 name = "bencode_utility_lib"
-version = "0.1.4"
+version = "0.1.5"
 
 [[package]]
 name = "bitflags"
@@ -156,7 +156,7 @@ dependencies = [
 
 [[package]]
 name = "torrent_file"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "bencode_lib",
 ]

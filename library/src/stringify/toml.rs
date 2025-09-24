@@ -13,10 +13,11 @@
 //! - Type consistency in arrays
 //! - Proper nesting of tables and sub-tables
 //!
+
 use crate::io::traits::IDestination;
 use crate::stringify::common::escape_string;
 use crate::Node;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// Converts a Node structure to a TOML formatted string
 ///
@@ -187,33 +188,57 @@ fn stringify_object(
     }
 
     let dict_sorted: BTreeMap<_, _> = dict.iter().collect();
-    let mut tables = BTreeMap::new();
-    let mut array_tables = BTreeMap::new();
-    let mut is_first = true;
+    let (tables_dict, array_tables_dict) = get_tables_in_dict(dict);
+    let tables: BTreeMap<_, _> = tables_dict.iter().map(|(k, v)| (k, *v)).collect();
+    let array_tables: BTreeMap<_, _> = array_tables_dict.iter().map(|(k, v)| (k, *v)).collect();
 
-    process_key_value_pairs(
-        &dict_sorted,
-        &mut tables,
-        &mut array_tables,
-        prefix,
-        destination,
-        &mut is_first,
-    )?;
+    process_key_value_pairs(&dict_sorted,prefix, destination, )?;
     process_nested_tables(&tables, prefix, destination)?;
     process_array_tables(&array_tables, prefix, destination)?;
 
     Ok(())
 }
-
-/// Processes key-value pairs from a sorted dictionary and categorizes them into simple values,
-/// nested tables, and array tables while writing simple values directly to the destination
+/// Gets tables and array tables from a dictionary by categorizing its entries
+/// This helper function processes a dictionary and identifies table entries,
+/// separating them into regular tables and array tables.
 ///
 /// # Arguments
-/// * `dict_sorted` - BTreeMap containing sorted key-value pairs from the original dictionary
-/// * `tables` - Mutable BTreeMap to store nested table structures
-/// * `array_tables` - Mutable BTreeMap to store array table structures
+/// * `dict` - The dictionary to process
+///
+/// # Returns
+/// A tuple containing:
+/// * HashMap of regular tables
+/// * HashMap of array tables
+fn get_tables_in_dict(
+    dict: &HashMap<String, Node>,
+) -> (HashMap<String, &HashMap<String, Node>>, HashMap<String, &Vec<Node>>) {
+    let mut tables = HashMap::new();
+    let mut array_tables = HashMap::new();
+
+    for (key, value) in dict {
+        match value {
+            Node::Dictionary(nested) => {
+                tables.insert(key.clone(), nested);
+            }
+            Node::List(items) if items.iter().all(|item| matches!(item, Node::Dictionary(_))) => {
+                array_tables.insert(key.clone(), items);
+            }
+            _ => {}
+        }
+    }
+
+    (tables, array_tables)
+}
+
+
+/// Processes key-value pairs in a TOML structure by iterating through sorted dictionary entries
+/// This function handles simple key-value pairs while skipping tables and array tables
+/// that need special processing
+///
+/// # Arguments
+/// * `dict_sorted` - BTreeMap containing sorted key-value pairs to process
 /// * `prefix` - Current table path prefix for nested structures
-/// * `destination` - Destination to write TOML output
+/// * `destination` - Destination to write the formatted TOML output
 /// * `is_first` - Mutable flag indicating if this is the first entry in current table
 ///
 /// # Returns
@@ -221,27 +246,23 @@ fn stringify_object(
 /// * `Err(String)` if an error occurred during processing
 fn process_key_value_pairs<'a>(
     dict_sorted: &BTreeMap<&'a String, &'a Node>,
-    tables: &mut BTreeMap<&'a String, &'a std::collections::HashMap<String, Node>>,
-    array_tables: &mut BTreeMap<&'a String, &'a Vec<Node>>,
     prefix: &str,
     destination: &mut dyn IDestination,
-    is_first: &mut bool,
 ) -> Result<(), String> {
     for (key, value) in dict_sorted {
         match value {
-            Node::Dictionary(nested) => {
-                tables.insert(key, nested);
+            Node::Dictionary(_) => {
                 continue;
             }
             Node::List(items) => {
                 if items.iter().all(|item| matches!(item, Node::Dictionary(_))) {
-                    array_tables.insert(key, items);
                     continue;
                 }
             }
             _ => {}
         }
-        stringify_key_value_pair(prefix, destination, is_first, key, value)?;
+        let mut is_first = true;
+        stringify_key_value_pair(prefix, destination, &mut is_first, key, value)?;
     }
     Ok(())
 }
@@ -287,8 +308,7 @@ fn process_array_tables(
     prefix: &str,
     destination: &mut dyn IDestination,
 ) -> Result<(), String> {
-    let array_tables_sorted: BTreeMap<_, _> = array_tables.iter().collect();
-    for (key, items) in array_tables_sorted {
+    for (key, items) in array_tables {
         for item in &**items {
             if let Node::Dictionary(nested) = item {
                 let new_prefix = calculate_prefix(prefix, key);
