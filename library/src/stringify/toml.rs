@@ -623,4 +623,20 @@ mod tests {
             "[[info.files]]\nlength = 351874\npath = [\"large.jpeg\"]\n[[info.files]]\nlength = 100\npath = [\"2\"]\n"
         );
     }
+
+    #[test]
+    fn test_stringify_nested_object_with_array_and_object_and_array() {
+        let mut source = BufferSource::new(
+            b"d4:infod5:filesld6:lengthi351874e4:pathl10:large.jpegeed6:lengthi100e4:pathl1:2eeeee4:filesld6:lengthi351874e4:pathl10:large.jpege",
+        );
+        let node = crate::parse(&mut source).unwrap();
+        let mut dest = BufferDestination::new();
+        stringify(&node, &mut dest).unwrap();
+        assert_eq!(
+            dest.to_string(),
+            "[[info.files]]\nlength = 351874\npath = [\"large.jpeg\"]\n[[info.files]]\nlength = 100\npath = [\"2\"]\n"
+        );
+    }
+
+
 }
