@@ -14,7 +14,7 @@
 //! - Proper nesting of tables and sub-tables
 //!
 use crate::io::traits::IDestination;
-use crate::{Node, BufferSource};
+use crate::{Node};
 use std::collections::BTreeMap;
 use crate::stringify::common::escape_string;
 
