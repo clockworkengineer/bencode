@@ -14,7 +14,7 @@
 //! - Proper nesting of tables and sub-tables
 //!
 use crate::io::traits::IDestination;
-use crate::{Node};
+use crate::{Node, BufferSource};
 use std::collections::BTreeMap;
 use crate::stringify::common::escape_string;
 
@@ -319,6 +319,12 @@ fn process_simple_values(nested_sorted: &BTreeMap<&String, &Node>,
                         let mut is_first = true;
                         stringify_key_value_pair("", destination, &mut is_first, inner_key, inner_value)?;
                     }
+                    Node::List(items) => {
+                        if items.iter().all(|item| matches!(item, Node::Integer(_) | Node::Str(_))) {
+                            let mut is_first = true;
+                            stringify_key_value_pair("", destination, &mut is_first, inner_key, inner_value)?;
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -561,6 +567,14 @@ mod tests {
         assert_eq!(dest.to_string(),
                    "[[items]]\n[items.nested]\nvalue = 42\n");
     }
-    
+
+    #[test]
+    fn test_stringify_nested_object_with_array() {
+        let mut source = BufferSource::new(b"d4:infod5:filesld6:lengthi351874e4:pathl10:large.jpegeed6:lengthi100e4:pathl1:2eeeee");
+        let node = crate::parse(&mut source).unwrap();
+        let mut dest = BufferDestination::new();
+        stringify(&node, &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "[[info.files]]\nlength = 351874\npath = [\"large.jpeg\"]\n[[info.files]]\nlength = 100\npath = [\"2\"]\n");
+    }
 }
 
