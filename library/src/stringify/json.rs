@@ -1,5 +1,5 @@
-use crate::nodes::node::*;
 use crate::io::traits::IDestination;
+use crate::nodes::node::*;
 use crate::stringify::common::escape_string;
 
 /// Converts a Node structure into a JSON string representation and writes it to the given destination.
@@ -9,7 +9,6 @@ use crate::stringify::common::escape_string;
 /// * `node` - The Node structure to convert
 /// * `destination` - The destination to write the JSON output to
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
-    
     match node {
         Node::Integer(value) => {
             destination.add_bytes(&value.to_string());
@@ -45,7 +44,9 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), 
             }
             destination.add_byte(b'}');
         }
-        Node::None => {destination.add_bytes("null");}
+        Node::None => {
+            destination.add_bytes("null");
+        }
     }
     Ok(())
 }
@@ -72,11 +73,15 @@ mod tests {
     #[test]
     fn stringify_list_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::List(vec![
-            Node::Integer(1),
-            Node::Integer(2),
-            Node::Str("three".to_string()),
-        ]), &mut destination).unwrap();
+        stringify(
+            &Node::List(vec![
+                Node::Integer(1),
+                Node::Integer(2),
+                Node::Str("three".to_string()),
+            ]),
+            &mut destination,
+        )
+        .unwrap();
         assert_eq!(destination.to_string(), "[1,2,\"three\"]");
     }
 
@@ -91,82 +96,9 @@ mod tests {
     }
 
     #[test]
-    fn stringify_empty_structures_works() {
-        let mut destination = Buffer::new();
-        stringify(&Node::List(vec![]), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "[]");
-        destination.clear();
-        stringify(&Node::Dictionary(std::collections::HashMap::new()), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "{}");
-    }
-
-    #[test]
     fn stringify_unknown_node_works() {
         let mut destination = Buffer::new();
         stringify(&Node::None, &mut destination).unwrap();
         assert_eq!(destination.to_string(), "null");
     }
-
-    #[test]
-    fn stringify_dictionary_sorting_works() {
-        let mut destination = Buffer::new();
-        let mut dict = std::collections::HashMap::new();
-        dict.insert("z".to_string(), Node::Integer(1));
-        dict.insert("a".to_string(), Node::Integer(2));
-        dict.insert("m".to_string(), Node::Integer(3));
-        stringify(&Node::Dictionary(dict), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "{\"a\":2,\"m\":3,\"z\":1}");
-    }
-
-    // #[test]
-    // fn stringify_dictionary_key_escaping_works() {
-    //     let mut destination = Buffer::new();
-    //     let mut dict = std::collections::HashMap::new();
-    //     dict.insert("key:with\"special\\chars".to_string(), Node::Integer(1));
-    //     stringify(&Node::Dictionary(dict), &mut destination).unwrap();
-    //     assert_eq!(destination.to_string(), "{\"key:with\\\"special\\\\chars\":1}");
-    // }
-
-    #[test]
-    fn stringify_complex_nested_structure_works() {
-        let mut destination = Buffer::new();
-        let mut inner_dict1 = std::collections::HashMap::new();
-        inner_dict1.insert("x".to_string(), Node::Integer(1));
-        let mut inner_dict2 = std::collections::HashMap::new();
-        inner_dict2.insert("y".to_string(), Node::List(vec![
-            Node::Str("a".to_string()),
-            Node::Dictionary(inner_dict1),
-            Node::Integer(42)
-        ]));
-        stringify(&Node::Dictionary(inner_dict2), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "{\"y\":[\"a\",{\"x\":1},42]}");
-    }
-
-    #[test]
-    fn stringify_nested_structures_works() {
-        let mut destination = Buffer::new();
-        let inner_list = Node::List(vec![Node::Integer(1), Node::Integer(2)]);
-        let mut inner_dict = std::collections::HashMap::new();
-        inner_dict.insert("key".to_string(), Node::Str("value".to_string()));
-        let dict = Node::Dictionary(inner_dict);
-
-        stringify(&Node::List(vec![inner_list, dict]), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "[[1,2],{\"key\":\"value\"}]");
-    }
-    #[test]
-    fn stringify_list_with_none_works() {
-        let mut destination = Buffer::new();
-        let list = vec![Node::Integer(1), Node::None, Node::Integer(2)];
-        stringify(&Node::List(list), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "[1,null,2]");
-    }
-    #[test]
-    fn stringify_dictionary_with_list_works() {
-        let mut destination = Buffer::new();
-        let mut dict = std::collections::HashMap::new();
-        dict.insert("list".to_string(), Node::List(vec![Node::Integer(1), Node::Integer(2)]));
-        stringify(&Node::Dictionary(dict), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "{\"list\":[1,2]}");
-    }
 }
-

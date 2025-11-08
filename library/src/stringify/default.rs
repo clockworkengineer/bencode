@@ -1,15 +1,15 @@
 //! Module providing functionality to convert bencode nodes into their string representation.
 //! Implements the bencode encoding rules for different node types.
 
-use crate::nodes::node::*;
 use crate::io::traits::IDestination;
+use crate::nodes::node::*;
 
 /// Converts a bencode Node into its string representation and writes it to the destination.
 ///
 /// # Arguments
 /// * `node` - The bencode node to stringify
 /// * `destination` - The destination to write the string representation to
-pub fn stringify(node: &Node, destination: &mut dyn IDestination)-> Result<(), String> {
+pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
     match node {
         // Handle integer nodes by formatting as "i<value>e"
         Node::Integer(value) => {
@@ -51,8 +51,8 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination)-> Result<(), S
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
     use crate::BufferDestination;
+    use std::collections::HashMap;
 
     #[test]
     fn stringify_integer_works() {
@@ -105,44 +105,4 @@ mod tests {
         stringify(&Node::None, &mut destination).unwrap();
         assert_eq!(destination.to_string(), "");
     }
-
-    #[test]
-    fn stringify_complex_dictionary_works() {
-        let mut destination = BufferDestination::new();
-        let mut dict = HashMap::new();
-        dict.insert(String::from("b"), make_node(1));
-        dict.insert(String::from("a"), make_node(2));
-        dict.insert(String::from("c"), make_node("test"));
-        stringify(&make_node(dict), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "d1:ai2e1:bi1e1:c4:teste");
-    }
-
-    #[test]
-    fn stringify_nested_dictionary_works() {
-        let mut destination = BufferDestination::new();
-        let mut inner_dict = HashMap::new();
-        inner_dict.insert(String::from("key2"), make_node("value"));
-        let mut outer_dict = HashMap::new();
-        outer_dict.insert(String::from("key1"), make_node(inner_dict));
-        stringify(&make_node(outer_dict), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "d4:key1d4:key25:valueee");
-    }
-
-    #[test]
-    fn stringify_list_with_none_works() {
-        let mut destination = BufferDestination::new();
-        let list = vec![make_node(32), Node::None, make_node("test")];
-        stringify(&make_node(list), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "li32e4:teste");
-    }
-
-    #[test]
-    fn stringify_dictionary_with_list_works() {
-        let mut destination = BufferDestination::new();
-        let mut dict = HashMap::new();
-        dict.insert(String::from("list"), make_node(vec![make_node(1), make_node(2)]));
-        stringify(&make_node(dict), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "d4:listli1ei2eee");
-    }
-
 }

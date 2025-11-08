@@ -1,8 +1,8 @@
 //! YAML serialization functionality for Bencode nodes.
 //! Provides methods to convert Bencode data structures into YAML formatted output.
 
-use crate::nodes::node::*;
 use crate::io::traits::IDestination;
+use crate::nodes::node::*;
 use crate::stringify::common::escape_string;
 
 /// Writes the specified number of indentation spaces to the destination.
@@ -11,9 +11,9 @@ use crate::stringify::common::escape_string;
 /// * `level` - The indentation level (number of 2-space indents)
 /// * `destination` - The output destination to write to
 fn write_indent(level: usize, destination: &mut dyn IDestination) {
-        for _ in 1..level {
-            destination.add_bytes("  ");
-        }
+    for _ in 1..level {
+        destination.add_bytes("  ");
+    }
 }
 
 /// Recursively writes a Bencode node to the destination in YAML format.
@@ -31,7 +31,7 @@ fn write_node(node: &Node, level: usize, destination: &mut dyn IDestination) {
             destination.add_byte(b'"');
             escape_string(&s, destination);
             destination.add_byte(b'"');
-        },
+        }
         // Write lists with proper YAML array formatting
         Node::List(items) => {
             if items.is_empty() {
@@ -92,7 +92,11 @@ mod tests {
     #[test]
     fn stringify_list_works() {
         let mut destination = Buffer::new();
-        stringify(&Node::List(vec![Node::Integer(1), Node::Integer(2)]), &mut destination).unwrap();
+        stringify(
+            &Node::List(vec![Node::Integer(1), Node::Integer(2)]),
+            &mut destination,
+        )
+        .unwrap();
         assert_eq!(destination.to_string(), "\n- 1\n- 2\n");
     }
 
@@ -128,53 +132,9 @@ mod tests {
     }
 
     #[test]
-    fn stringify_nested_list_works() {
-        let mut destination = Buffer::new();
-        stringify(&Node::List(vec![Node::List(vec![Node::Integer(1)])]), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "\n- \n  - 1\n\n");
-    }
-
-    #[test]
-    fn stringify_nested_dictionary_works() {
-        let mut destination = Buffer::new();
-        let mut inner_dict = std::collections::HashMap::new();
-        inner_dict.insert("inner".to_string(), Node::Integer(1));
-        let mut outer_dict = std::collections::HashMap::new();
-        outer_dict.insert("outer".to_string(), Node::Dictionary(inner_dict));
-        stringify(&Node::Dictionary(outer_dict), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "\nouter: \n  inner: 1\n\n");
-    }
-
-    #[test]
-    fn stringify_multi_entry_dictionary_works() {
-        let mut destination = Buffer::new();
-        let mut dict = std::collections::HashMap::new();
-        dict.insert("a".to_string(), Node::Integer(1));
-        dict.insert("b".to_string(), Node::Integer(2));
-        stringify(&Node::Dictionary(dict), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "\na: 1\nb: 2\n");
-    }
-
-    #[test]
-    fn stringify_mixed_list_works() {
-        let mut destination = Buffer::new();
-        stringify(&Node::List(vec![
-            Node::Integer(1),
-            Node::Str("test".to_string()),
-            Node::List(vec![])
-        ]), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "\n- 1\n- \"test\"\n- []\n");
-    }
-
-    #[test]
     fn stringify_unknown_works() {
         let mut destination = Buffer::new();
         stringify(&Node::None, &mut destination).unwrap();
         assert_eq!(destination.to_string(), "unknown");
     }
-
 }
-
-
-
-

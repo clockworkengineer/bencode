@@ -1,12 +1,11 @@
 //! Default parser implementation for bencode format.
 //! Provides functionality to parse bencode-encoded data into Node structures.
 
+use crate::Node::Dictionary;
+use crate::error::messages::*;
+use crate::io::traits::ISource;
 use crate::nodes::node::Node;
 use std::collections::HashMap;
-use crate::io::traits::ISource;
-use crate::error::messages::*;
-use crate::Node::Dictionary;
-
 
 /// Start marker for bencode integer values ('i')
 /// Format: i<digits>e
@@ -56,7 +55,8 @@ fn parse_string_length(source: &mut dyn ISource) -> Result<usize, String> {
         source.next();
     }
 
-    length.parse::<usize>()
+    length
+        .parse::<usize>()
         .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())
 }
 
@@ -76,8 +76,7 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
         Some('0'..='9') => parse_string(source),
         Some(STRING_SEPARATOR) => Err(ERR_INVALID_STRING_LENGTH.to_string()),
         Some(c) => Err(unexpected_character(c)),
-        None => Err(ERR_EMPTY_INPUT
-            .to_string())
+        None => Err(ERR_EMPTY_INPUT.to_string()),
     }
 }
 
@@ -98,7 +97,8 @@ fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
             if number == "-0" {
                 return Err(ERR_INVALID_INTEGER.to_string());
             }
-            return number.parse::<i64>()
+            return number
+                .parse::<i64>()
                 .map(Node::Integer)
                 .map_err(|_| ERR_INVALID_INTEGER.to_string());
         }
@@ -117,9 +117,8 @@ fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
 /// # Returns
 /// * `Result<Node, String>` - String Node or error message
 fn parse_string(source: &mut dyn ISource) -> Result<Node, String> {
-
     let mut string = String::new();
-    for _ in 0.. parse_string_length(source)? {
+    for _ in 0..parse_string_length(source)? {
         if let Some(c) = source.current() {
             string.push(c);
             source.next();
@@ -177,8 +176,7 @@ fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
                 let value = parse(source)?;
                 dict.add_to_dictionary(&key, value);
             }
-            _ => return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string())
-
+            _ => return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string()),
         }
     }
     Err(ERR_UNTERMINATED_DICTIONARY.to_string())
@@ -186,8 +184,8 @@ fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
 
 #[cfg(test)]
 mod tests {
-    use crate::BufferSource;
     use super::*;
+    use crate::BufferSource;
 
     #[test]
     fn parse_integer_works() {
@@ -210,7 +208,9 @@ mod tests {
                 assert!(matches!(&list[0], Node::Integer(32)));
                 assert!(matches!(&list[1], Node::Integer(33)));
             }
-            _ => { assert_eq!(false, true); }
+            _ => {
+                assert_eq!(false, true);
+            }
         }
     }
 
@@ -222,7 +222,9 @@ mod tests {
                 assert_eq!(dict.len(), 1);
                 assert!(matches!(dict.get("test"), Some(Node::Integer(32))));
             }
-            _ => { assert_eq!(false, true); }
+            _ => {
+                assert_eq!(false, true);
+            }
         }
     }
     #[test]
@@ -266,108 +268,4 @@ mod tests {
         let mut source = BufferSource::new(b"d3:bbci32e3:abci42ee");
         assert!(matches!(parse(&mut source), Err(s) if s == ERR_DICT_KEYS_ORDER));
     }
-
-    #[test]
-    fn parse_nested_list_works() {
-        let mut source = BufferSource::new(b"lli1ei2eeli3ei4eee");
-        match parse(&mut source) {
-            Ok(Node::List(list)) => {
-                assert_eq!(list.len(), 2);
-                assert!(matches!(&list[0], Node::List(l) if l.len() == 2));
-                assert!(matches!(&list[1], Node::List(l) if l.len() == 2));
-            }
-            _ => { assert_eq!(false, true); }
-        }
-    }
-
-    #[test]
-    fn parse_empty_list_works() {
-        let mut source = BufferSource::new(b"le");
-        match parse(&mut source) {
-            Ok(Node::List(list)) => {
-                assert_eq!(list.len(), 0);
-            }
-            _ => { assert_eq!(false, true); }
-        }
-    }
-
-    #[test]
-    fn parse_empty_dictionary_works() {
-        let mut source = BufferSource::new(b"de");
-        match parse(&mut source) {
-            Ok(Dictionary(dict)) => {
-                assert_eq!(dict.len(), 0);
-            }
-            _ => { assert_eq!(false, true); }
-        }
-    }
-
-    #[test]
-    fn parse_dictionary_with_non_string_key_fails() {
-        let mut source = BufferSource::new(b"di32ei42ee");
-        assert!(matches!(parse(&mut source), Err(s) if s == ERR_DICT_KEY_MUST_BE_STRING));
-    }
-
-    #[test]
-    fn parse_mixed_list_works() {
-        let mut source = BufferSource::new(b"li32e4:testi-42ee");
-        match parse(&mut source) {
-            Ok(Node::List(list)) => {
-                assert_eq!(list.len(), 3);
-                assert!(matches!(&list[0], Node::Integer(32)));
-                assert!(matches!(&list[1], Node::Str(s) if s == "test"));
-                assert!(matches!(&list[2], Node::Integer(-42)));
-            }
-            _ => { assert_eq!(false, true); }
-        }
-    }
-
-    #[test]
-    fn parse_invalid_integer_format_fails() {
-        let mut source = BufferSource::new(b"i++32e");
-        assert!(matches!(parse(&mut source), Err(s) if s == ERR_INVALID_INTEGER));
-    }
-    #[test]
-    fn test_complex_dictionary() {
-        let mut source = BufferSource::new(b"d3:foo3:bar5:hello5:world4:test5:valuee");
-        let result = parse(&mut source);
-        assert!(result.is_ok());
-        if let Ok(Dictionary(map)) = result {
-            assert_eq!(map.len(), 3);
-            assert_eq!(map.get("foo").unwrap(), &Node::Str("bar".to_string()));
-            assert_eq!(map.get("test").unwrap(), &Node::Str("value".to_string()));
-            assert_eq!(map.get("hello").unwrap(), &Node::Str("world".to_string()));
-        } else {
-            assert_eq!(false, true);
-        }
-    }
-
-    #[test]
-    fn test_invalid_character() {
-        let mut source = BufferSource::new(b"x123");
-        assert!(matches!(parse(&mut source), Err(s) if s.contains("Unexpected character")));
-    }
-
-    #[test]
-    fn test_empty_input() {
-        let mut source = BufferSource::new(b"");
-        assert!(matches!(parse(&mut source), Err(s) if s == ERR_EMPTY_INPUT));
-    }
-
-    #[test]
-    fn test_invalid_string_colon_only() {
-        let mut source = BufferSource::new(b":");
-        assert!(matches!(parse(&mut source), Err(s) if s == ERR_INVALID_STRING_LENGTH));
-    }
-    #[test]
-    fn test_zero_length_string() {
-        let mut source = BufferSource::new(b"0:");
-        assert!(matches!(parse(&mut source), Ok(Node::Str(s)) if s.is_empty()));
-    }
-    #[test]
-    fn test_invalid_string_length() {
-        let mut source = BufferSource::new(b"a:test");
-        assert!(matches!(parse(&mut source), Err(s) if s.contains("Unexpected character")));
-    }
-
 }

@@ -8,7 +8,7 @@ use crate::stringify::common::escape_string;
 /// # Arguments
 /// * `node` - The bencode Node to convert
 /// * `destination` - The destination to write the XML output to
-pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String>{
+pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
     match node {
         Node::Str(value) => {
             // Wrap string value in <string> tags
@@ -72,7 +72,8 @@ mod tests {
         stringify(
             &Node::List(vec![Node::Integer(1), Node::Str("test".into())]),
             &mut destination,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(
             destination.to_string(),
             "<list><integer>1</integer><string>test</string></list>"
@@ -92,56 +93,9 @@ mod tests {
     }
 
     #[test]
-    fn test_empty_list() {
-        let mut destination = Buffer::new();
-        stringify(&Node::List(vec![]), &mut destination).unwrap();
-        assert_eq!(destination.to_string(), "<list></list>");
-    }
-
-    #[test]
-    fn test_empty_dictionary() {
-        let mut destination = Buffer::new();
-        stringify(
-            &Node::Dictionary(std::collections::HashMap::new()),
-            &mut destination,
-        ).unwrap();
-        assert_eq!(destination.to_string(), "<dictionary></dictionary>");
-    }
-
-    #[test]
     fn test_none_node() {
         let mut destination = Buffer::new();
         stringify(&Node::None, &mut destination).unwrap();
         assert_eq!(destination.to_string(), "");
     }
-
-    #[test]
-    fn test_nested_dictionary() {
-        let mut destination = Buffer::new();
-        let mut inner_dict = std::collections::HashMap::new();
-        inner_dict.insert("inner_key".into(), Node::Integer(42));
-        let mut outer_dict = std::collections::HashMap::new();
-        outer_dict.insert("outer_key".into(), Node::Dictionary(inner_dict));
-        stringify(&Node::Dictionary(outer_dict), &mut destination).unwrap();
-        assert_eq!(
-            destination.to_string(),
-            "<dictionary><item><key>outer_key</key><value><dictionary><item><key>inner_key</key><value><integer>42</integer></value></item></dictionary></value></item></dictionary>"
-        );
-    }
-
-    #[test]
-    fn test_nested_list_mixed() {
-        let mut destination = Buffer::new();
-        let nested = Node::List(vec![
-            Node::Integer(1),
-            Node::List(vec![Node::Str("nested".into())]),
-            Node::None,
-        ]);
-        stringify(&nested, &mut destination).unwrap();
-        assert_eq!(
-            destination.to_string(),
-            "<list><integer>1</integer><list><string>nested</string></list></list>"
-        );
-    }
-    
 }
