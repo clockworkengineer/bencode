@@ -48,6 +48,34 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), 
     Ok(())
 }
 
+/// Converts a bencode Node into its string representation and returns it as a String.
+/// This is a convenience function that creates a BufferDestination internally.
+///
+/// # Arguments
+/// * `node` - The bencode node to stringify
+///
+/// # Returns
+/// * `Result<String, String>` - The bencode string representation or error message
+pub fn stringify_to_string(node: &Node) -> Result<String, String> {
+    use crate::io::destinations::buffer::Buffer;
+    let mut destination = Buffer::new();
+    stringify(node, &mut destination)?;
+    Ok(destination.to_string())
+}
+
+/// Converts a bencode Node into its byte representation and returns it as a Vec<u8>.
+/// This is a convenience function that creates a BufferDestination internally.
+///
+/// # Arguments
+/// * `node` - The bencode node to stringify
+///
+/// # Returns
+/// * `Result<Vec<u8>, String>` - The bencode byte representation or error message
+pub fn stringify_to_bytes(node: &Node) -> Result<Vec<u8>, String> {
+    let s = stringify_to_string(node)?;
+    Ok(s.into_bytes())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

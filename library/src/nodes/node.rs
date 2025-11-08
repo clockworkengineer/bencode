@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 
 /// A node in the bencode data structure that can represent different types of values.
 #[derive(Clone, Debug, PartialEq)]
@@ -23,10 +24,133 @@ impl Node {
         }
     }
 
-    pub(crate) fn add_to_dictionary(&mut self, key :&str, p0: Node) {
+    pub(crate) fn add_to_dictionary(&mut self, key: &str, p0: Node) {
         match self {
-            Node::Dictionary(dict) => { let _ = dict.insert(key.to_string(), p0); }
+            Node::Dictionary(dict) => {
+                let _ = dict.insert(key.to_string(), p0);
+            }
             _ => panic!("Can't push to a non-list node"),
+        }
+    }
+
+    /// Returns true if the node is an Integer variant
+    pub fn is_integer(&self) -> bool {
+        matches!(self, Node::Integer(_))
+    }
+
+    /// Returns true if the node is a String variant
+    pub fn is_string(&self) -> bool {
+        matches!(self, Node::Str(_))
+    }
+
+    /// Returns true if the node is a List variant
+    pub fn is_list(&self) -> bool {
+        matches!(self, Node::List(_))
+    }
+
+    /// Returns true if the node is a Dictionary variant
+    pub fn is_dictionary(&self) -> bool {
+        matches!(self, Node::Dictionary(_))
+    }
+
+    /// Returns true if the node is a None variant
+    pub fn is_none(&self) -> bool {
+        matches!(self, Node::None)
+    }
+
+    /// Returns a reference to the inner integer value if this is an Integer node
+    pub fn as_integer(&self) -> Option<&i64> {
+        match self {
+            Node::Integer(i) => Some(i),
+            _ => None,
+        }
+    }
+
+    /// Returns a reference to the inner string value if this is a Str node
+    pub fn as_string(&self) -> Option<&str> {
+        match self {
+            Node::Str(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Returns a reference to the inner list if this is a List node
+    pub fn as_list(&self) -> Option<&Vec<Node>> {
+        match self {
+            Node::List(list) => Some(list),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the inner list if this is a List node
+    pub fn as_list_mut(&mut self) -> Option<&mut Vec<Node>> {
+        match self {
+            Node::List(list) => Some(list),
+            _ => None,
+        }
+    }
+
+    /// Returns a reference to the inner dictionary if this is a Dictionary node
+    pub fn as_dictionary(&self) -> Option<&HashMap<String, Node>> {
+        match self {
+            Node::Dictionary(dict) => Some(dict),
+            _ => None,
+        }
+    }
+
+    /// Returns a mutable reference to the inner dictionary if this is a Dictionary node
+    pub fn as_dictionary_mut(&mut self) -> Option<&mut HashMap<String, Node>> {
+        match self {
+            Node::Dictionary(dict) => Some(dict),
+            _ => None,
+        }
+    }
+
+    /// Gets a value from a Dictionary node by key
+    pub fn get(&self, key: &str) -> Option<&Node> {
+        match self {
+            Node::Dictionary(dict) => dict.get(key),
+            _ => None,
+        }
+    }
+
+    /// Gets a mutable value from a Dictionary node by key
+    pub fn get_mut(&mut self, key: &str) -> Option<&mut Node> {
+        match self {
+            Node::Dictionary(dict) => dict.get_mut(key),
+            _ => None,
+        }
+    }
+
+    /// Returns the number of elements in a List or Dictionary, or 0 for other types
+    pub fn len(&self) -> usize {
+        match self {
+            Node::List(list) => list.len(),
+            Node::Dictionary(dict) => dict.len(),
+            Node::Str(s) => s.len(),
+            _ => 0,
+        }
+    }
+
+    /// Returns true if a List or Dictionary is empty, or for other types
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Node::List(list) => list.is_empty(),
+            Node::Dictionary(dict) => dict.is_empty(),
+            Node::Str(s) => s.is_empty(),
+            Node::None => true,
+            _ => false,
+        }
+    }
+
+    /// Returns the type name as a string
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            Node::Integer(_) => "integer",
+            Node::Str(_) => "string",
+            Node::List(_) => "list",
+            Node::Dictionary(_) => "dictionary",
+            Node::None => "none",
         }
     }
 }
@@ -100,9 +224,42 @@ where
     value.into()
 }
 
+/// Implements Display trait for Node to provide human-readable string representation
+impl fmt::Display for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Node::Integer(i) => write!(f, "{}", i),
+            Node::Str(s) => write!(f, "\"{}\"", s),
+            Node::List(list) => {
+                write!(f, "[")?;
+                for (i, item) in list.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", item)?;
+                }
+                write!(f, "]")
+            }
+            Node::Dictionary(dict) => {
+                write!(f, "{{")?;
+                let mut items: Vec<_> = dict.iter().collect();
+                items.sort_by_key(|(k, _)| *k);
+                for (i, (key, value)) in items.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "\"{}\": {}", key, value)?;
+                }
+                write!(f, "}}")
+            }
+            Node::None => write!(f, "null"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{make_node, Node};
+    use super::{Node, make_node};
     use std::collections::HashMap;
 
     #[test]
@@ -300,7 +457,6 @@ mod tests {
         let node = make_node([1, 2, 3]);
         match node {
             Node::List(list) => {
-
                 for item in list {
                     match item {
                         Node::Integer(_) => (),
@@ -314,7 +470,11 @@ mod tests {
 
     #[test]
     fn mixed_array_literal_to_list_node_works() {
-        let node = Node::from([Node::Integer(1), Node::Str("x".to_string()), Node::Integer(3)]);
+        let node = Node::from([
+            Node::Integer(1),
+            Node::Str("x".to_string()),
+            Node::Integer(3),
+        ]);
         match node {
             Node::List(list) => {
                 assert_eq!(list.len(), 3);
@@ -429,5 +589,187 @@ mod tests {
         let original = Node::Integer(42);
         let cloned = original.clone();
         assert_eq!(original, cloned);
+    }
+
+    // New feature tests
+    #[test]
+    fn test_is_integer() {
+        assert!(Node::Integer(42).is_integer());
+        assert!(!Node::Str("test".to_string()).is_integer());
+    }
+
+    #[test]
+    fn test_is_string() {
+        assert!(Node::Str("test".to_string()).is_string());
+        assert!(!Node::Integer(42).is_string());
+    }
+
+    #[test]
+    fn test_is_list() {
+        assert!(Node::List(vec![]).is_list());
+        assert!(!Node::Integer(42).is_list());
+    }
+
+    #[test]
+    fn test_is_dictionary() {
+        assert!(Node::Dictionary(HashMap::new()).is_dictionary());
+        assert!(!Node::Integer(42).is_dictionary());
+    }
+
+    #[test]
+    fn test_is_none() {
+        assert!(Node::None.is_none());
+        assert!(!Node::Integer(42).is_none());
+    }
+
+    #[test]
+    fn test_as_integer() {
+        let node = Node::Integer(42);
+        assert_eq!(node.as_integer(), Some(&42));
+        assert_eq!(Node::Str("test".to_string()).as_integer(), None);
+    }
+
+    #[test]
+    fn test_as_string() {
+        let node = Node::Str("test".to_string());
+        assert_eq!(node.as_string(), Some("test"));
+        assert_eq!(Node::Integer(42).as_string(), None);
+    }
+
+    #[test]
+    fn test_as_list() {
+        let list = vec![Node::Integer(1), Node::Integer(2)];
+        let node = Node::List(list.clone());
+        assert_eq!(node.as_list(), Some(&list));
+        assert_eq!(Node::Integer(42).as_list(), None);
+    }
+
+    #[test]
+    fn test_as_list_mut() {
+        let mut node = Node::List(vec![Node::Integer(1)]);
+        if let Some(list) = node.as_list_mut() {
+            list.push(Node::Integer(2));
+        }
+        assert_eq!(node.as_list().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_as_dictionary() {
+        let mut dict = HashMap::new();
+        dict.insert("key".to_string(), Node::Integer(42));
+        let node = Node::Dictionary(dict.clone());
+        assert_eq!(node.as_dictionary(), Some(&dict));
+        assert_eq!(Node::Integer(42).as_dictionary(), None);
+    }
+
+    #[test]
+    fn test_as_dictionary_mut() {
+        let mut node = Node::Dictionary(HashMap::new());
+        if let Some(dict) = node.as_dictionary_mut() {
+            dict.insert("key".to_string(), Node::Integer(42));
+        }
+        assert_eq!(node.as_dictionary().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_get() {
+        let mut dict = HashMap::new();
+        dict.insert("key".to_string(), Node::Integer(42));
+        let node = Node::Dictionary(dict);
+        assert_eq!(node.get("key"), Some(&Node::Integer(42)));
+        assert_eq!(node.get("missing"), None);
+        assert_eq!(Node::Integer(42).get("key"), None);
+    }
+
+    #[test]
+    fn test_get_mut() {
+        let mut dict = HashMap::new();
+        dict.insert("key".to_string(), Node::Integer(42));
+        let mut node = Node::Dictionary(dict);
+
+        if let Some(value) = node.get_mut("key") {
+            *value = Node::Integer(100);
+        }
+        assert_eq!(node.get("key"), Some(&Node::Integer(100)));
+    }
+
+    #[test]
+    fn test_len() {
+        assert_eq!(
+            Node::List(vec![Node::Integer(1), Node::Integer(2)]).len(),
+            2
+        );
+
+        let mut dict = HashMap::new();
+        dict.insert("a".to_string(), Node::Integer(1));
+        assert_eq!(Node::Dictionary(dict).len(), 1);
+
+        assert_eq!(Node::Str("hello".to_string()).len(), 5);
+        assert_eq!(Node::Integer(42).len(), 0);
+        assert_eq!(Node::None.len(), 0);
+    }
+
+    #[test]
+    fn test_is_empty() {
+        assert!(Node::List(vec![]).is_empty());
+        assert!(!Node::List(vec![Node::Integer(1)]).is_empty());
+        assert!(Node::Dictionary(HashMap::new()).is_empty());
+        assert!(Node::Str("".to_string()).is_empty());
+        assert!(!Node::Str("test".to_string()).is_empty());
+        assert!(Node::None.is_empty());
+        assert!(!Node::Integer(42).is_empty());
+    }
+
+    #[test]
+    fn test_type_name() {
+        assert_eq!(Node::Integer(42).type_name(), "integer");
+        assert_eq!(Node::Str("test".to_string()).type_name(), "string");
+        assert_eq!(Node::List(vec![]).type_name(), "list");
+        assert_eq!(Node::Dictionary(HashMap::new()).type_name(), "dictionary");
+        assert_eq!(Node::None.type_name(), "none");
+    }
+
+    #[test]
+    fn test_display_integer() {
+        let node = Node::Integer(42);
+        assert_eq!(format!("{}", node), "42");
+    }
+
+    #[test]
+    fn test_display_string() {
+        let node = Node::Str("hello".to_string());
+        assert_eq!(format!("{}", node), "\"hello\"");
+    }
+
+    #[test]
+    fn test_display_list() {
+        let node = Node::List(vec![Node::Integer(1), Node::Integer(2), Node::Integer(3)]);
+        assert_eq!(format!("{}", node), "[1, 2, 3]");
+    }
+
+    #[test]
+    fn test_display_dictionary() {
+        let mut dict = HashMap::new();
+        dict.insert("a".to_string(), Node::Integer(1));
+        dict.insert("b".to_string(), Node::Integer(2));
+        let node = Node::Dictionary(dict);
+        assert_eq!(format!("{}", node), "{\"a\": 1, \"b\": 2}");
+    }
+
+    #[test]
+    fn test_display_none() {
+        let node = Node::None;
+        assert_eq!(format!("{}", node), "null");
+    }
+
+    #[test]
+    fn test_display_nested() {
+        let mut inner_dict = HashMap::new();
+        inner_dict.insert("x".to_string(), Node::Integer(10));
+
+        let list = vec![Node::Integer(1), Node::Dictionary(inner_dict)];
+        let node = Node::List(list);
+
+        assert_eq!(format!("{}", node), "[1, {\"x\": 10}]");
     }
 }

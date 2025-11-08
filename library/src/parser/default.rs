@@ -80,6 +80,32 @@ pub fn parse(source: &mut dyn ISource) -> Result<Node, String> {
     }
 }
 
+/// Parses bencode data from a byte slice into a Node structure.
+/// This is a convenience function that creates a BufferSource internally.
+///
+/// # Arguments
+/// * `data` - The byte slice containing bencode-encoded data
+///
+/// # Returns
+/// * `Result<Node, String>` - Parsed Node or error message
+pub fn parse_bytes(data: &[u8]) -> Result<Node, String> {
+    use crate::io::sources::buffer::Buffer;
+    let mut source = Buffer::new(data);
+    parse(&mut source)
+}
+
+/// Parses bencode data from a string into a Node structure.
+/// This is a convenience function that creates a BufferSource internally.
+///
+/// # Arguments
+/// * `data` - The string containing bencode-encoded data
+///
+/// # Returns
+/// * `Result<Node, String>` - Parsed Node or error message
+pub fn parse_str(data: &str) -> Result<Node, String> {
+    parse_bytes(data.as_bytes())
+}
+
 /// Parses an integer value from the source, expecting format 'i<number>e'.
 /// Handles both positive and negative integers, rejecting invalid formats like '-0'.
 ///
