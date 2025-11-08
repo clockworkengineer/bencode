@@ -149,3 +149,25 @@ fn test_stringify_negative_integers() {
     stringify(&Node::List(list), &mut destination).unwrap();
     assert_eq!(destination.to_string(), "[-1,-100,0,100]");
 }
+
+#[test]
+fn test_stringify_string_with_escapes() {
+    let mut destination = BufferDestination::new();
+    stringify(
+        &Node::Str("hello\"world\\test".to_string()),
+        &mut destination,
+    )
+    .unwrap();
+    assert_eq!(destination.to_string(), "\"hello\\\"world\\\\test\"");
+}
+
+#[test]
+fn test_stringify_string_with_newline_tab() {
+    let mut destination = BufferDestination::new();
+    stringify(
+        &Node::Str("line1\nline2\ttab".to_string()),
+        &mut destination,
+    )
+    .unwrap();
+    assert_eq!(destination.to_string(), "\"line1\\u000aline2\\u0009tab\"");
+}

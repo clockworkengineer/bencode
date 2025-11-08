@@ -128,3 +128,61 @@ fn test_stringify_mixed_dictionary() {
         "d4:dictd1:xi10ee7:integeri100e4:listli1ei2ei3ee6:string5:helloe"
     );
 }
+
+#[test]
+fn test_stringify_zero_integer() {
+    let mut destination = BufferDestination::new();
+    stringify(&make_node(0), &mut destination).unwrap();
+    assert_eq!(destination.to_string(), "i0e");
+}
+
+#[test]
+fn test_stringify_large_integer() {
+    let mut destination = BufferDestination::new();
+    stringify(&make_node(9223372036854775807i64), &mut destination).unwrap();
+    assert_eq!(destination.to_string(), "i9223372036854775807e");
+}
+
+#[test]
+fn test_stringify_list_of_empty_strings() {
+    let mut destination = BufferDestination::new();
+    let list = vec![make_node(""), make_node(""), make_node("")];
+    stringify(&make_node(list), &mut destination).unwrap();
+    assert_eq!(destination.to_string(), "l0:0:0:e");
+}
+
+#[test]
+fn test_stringify_dictionary_with_numeric_string_keys() {
+    let mut destination = BufferDestination::new();
+    let mut dict = HashMap::new();
+    dict.insert(String::from("1"), make_node("one"));
+    dict.insert(String::from("2"), make_node("two"));
+    dict.insert(String::from("10"), make_node("ten"));
+
+    stringify(&make_node(dict), &mut destination).unwrap();
+    let output = destination.to_string();
+
+    // Keys should be sorted lexicographically: "1", "10", "2"
+    assert_eq!(output, "d1:13:one2:103:ten1:23:twoe");
+}
+
+#[test]
+fn test_stringify_very_nested_structure() {
+    let mut destination = BufferDestination::new();
+
+    let level5 = make_node("deepest");
+    let level4 = make_node(vec![level5]);
+
+    let mut dict3 = HashMap::new();
+    dict3.insert(String::from("l4"), level4);
+    let level3 = make_node(dict3);
+
+    let level2 = make_node(vec![level3]);
+
+    let mut dict1 = HashMap::new();
+    dict1.insert(String::from("l2"), level2);
+    let level1 = make_node(dict1);
+
+    stringify(&level1, &mut destination).unwrap();
+    assert_eq!(destination.to_string(), "d2:l2ld2:l4l7:deepesteeee");
+}

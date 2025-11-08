@@ -226,3 +226,118 @@ fn test_stringify_with_list_of_primitives() {
     assert!(output.contains("numbers = [1, 2, 3]"));
     assert!(output.contains("strings = [\"a\", \"b\", \"c\"]"));
 }
+
+#[test]
+fn test_stringify_array_of_arrays_fails() {
+    let mut dest = BufferDestination::new();
+    let mut dict = HashMap::new();
+    // Array containing arrays - first element is list, second is integer
+    dict.insert(
+        "nested".to_string(),
+        make_node(vec![make_node(vec![make_node(1)]), make_node(2)]),
+    );
+
+    let result = stringify(&Node::Dictionary(dict), &mut dest);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_stringify_dictionary_with_none_value() {
+    let mut dest = BufferDestination::new();
+    let mut dict = HashMap::new();
+    dict.insert("key1".to_string(), make_node("value"));
+    dict.insert("key2".to_string(), Node::None);
+
+    stringify(&Node::Dictionary(dict), &mut dest).unwrap();
+    let output = dest.to_string();
+
+    assert!(output.contains("key1 = \"value\""));
+    assert!(output.contains("key2 = null"));
+}
+
+#[test]
+fn test_stringify_nested_with_prefix() {
+    let mut dest = BufferDestination::new();
+    let mut inner = HashMap::new();
+    inner.insert("value".to_string(), make_node(42));
+
+    let mut middle = HashMap::new();
+    middle.insert("inner".to_string(), make_node(inner));
+
+    let mut outer = HashMap::new();
+    outer.insert("middle".to_string(), make_node(middle));
+
+    stringify(&Node::Dictionary(outer), &mut dest).unwrap();
+    assert_eq!(dest.to_string(), "[middle.inner]\nvalue = 42\n");
+}
+
+#[test]
+fn test_stringify_array_table_with_nested_dict() {
+    let mut dest = BufferDestination::new();
+
+    let mut nested_dict = HashMap::new();
+    nested_dict.insert("nested_key".to_string(), make_node("nested_value"));
+
+    let mut item = HashMap::new();
+    item.insert("id".to_string(), make_node(1));
+    item.insert("details".to_string(), make_node(nested_dict));
+
+    let mut root = HashMap::new();
+    root.insert("items".to_string(), make_node(vec![make_node(item)]));
+
+    stringify(&Node::Dictionary(root), &mut dest).unwrap();
+    let output = dest.to_string();
+
+    assert!(output.contains("[[items]]"));
+    assert!(output.contains("id = 1"));
+    assert!(output.contains("[items.details]"));
+    assert!(output.contains("nested_key = \"nested_value\""));
+}
+
+#[test]
+fn test_stringify_list_of_lists_homogeneous() {
+    let mut dest = BufferDestination::new();
+    let mut dict = HashMap::new();
+    // List of lists (homogeneous - all are lists)
+    dict.insert(
+        "matrix".to_string(),
+        make_node(vec![
+            make_node(vec![make_node(1), make_node(2)]),
+            make_node(vec![make_node(3), make_node(4)]),
+        ]),
+    );
+
+    let result = stringify(&Node::Dictionary(dict), &mut dest);
+    // This should succeed as all elements are lists
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_stringify_with_special_characters_in_string() {
+    let mut dest = BufferDestination::new();
+    let mut dict = HashMap::new();
+    dict.insert("text".to_string(), make_node("hello\nworld\ttab"));
+
+    stringify(&Node::Dictionary(dict), &mut dest).unwrap();
+    let output = dest.to_string();
+
+    // Should have escaped special characters
+    assert!(output.contains("text = \"hello\\u000aworld\\u0009tab\""));
+}
+
+#[test]
+fn test_stringify_negative_numbers() {
+    let mut dest = BufferDestination::new();
+    let mut dict = HashMap::new();
+    dict.insert("negative".to_string(), make_node(-42));
+    dict.insert(
+        "neg_list".to_string(),
+        make_node(vec![make_node(-1), make_node(-2), make_node(-3)]),
+    );
+
+    stringify(&Node::Dictionary(dict), &mut dest).unwrap();
+    let output = dest.to_string();
+
+    assert!(output.contains("negative = -42"));
+    assert!(output.contains("neg_list = [-1, -2, -3]"));
+}

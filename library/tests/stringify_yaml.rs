@@ -181,3 +181,17 @@ fn test_dictionary_with_empty_structures() {
     assert!(output.contains("empty_dict: {}"));
     assert!(output.contains("value: 42"));
 }
+
+#[test]
+fn test_none_node() {
+    let mut destination = BufferDestination::new();
+    stringify(&Node::None, &mut destination).unwrap();
+    assert_eq!(destination.to_string(), "unknown");
+}
+
+#[test]
+fn test_string_with_special_chars() {
+    let mut destination = BufferDestination::new();
+    stringify(&Node::Str("test\nline".to_string()), &mut destination).unwrap();
+    assert_eq!(destination.to_string(), "\"test\\u000aline\"");
+}

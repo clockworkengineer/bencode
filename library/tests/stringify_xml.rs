@@ -165,3 +165,34 @@ fn test_dictionary_with_none_value() {
     assert!(output.contains("<string>value</string>"));
     // None values produce no output in the XML
 }
+
+#[test]
+fn test_string_with_special_characters() {
+    let mut destination = BufferDestination::new();
+    stringify(
+        &Node::Str("test\"quote\\backslash".into()),
+        &mut destination,
+    )
+    .unwrap();
+    assert_eq!(
+        destination.to_string(),
+        "<string>test\\\"quote\\\\backslash</string>"
+    );
+}
+
+#[test]
+fn test_very_deeply_nested_structure() {
+    let mut destination = BufferDestination::new();
+    let level5 = Node::Integer(5);
+    let level4 = Node::List(vec![level5]);
+    let level3 = Node::List(vec![level4]);
+    let level2 = Node::List(vec![level3]);
+    let level1 = Node::List(vec![level2]);
+
+    stringify(&level1, &mut destination).unwrap();
+    assert!(
+        destination
+            .to_string()
+            .contains("<list><list><list><list><integer>5</integer></list></list></list></list>")
+    );
+}

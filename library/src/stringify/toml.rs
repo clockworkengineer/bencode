@@ -508,4 +508,74 @@ mod tests {
         stringify(&node, &mut destination).unwrap();
         assert_eq!(destination.to_string(), "key = null\n");
     }
+
+    #[test]
+    fn test_non_dictionary_root_fails() {
+        let mut destination = BufferDestination::new();
+        let node = make_node(42); // Integer instead of Dictionary
+        let result = stringify(&node, &mut destination);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err(),
+            "TOML format requires a dictionary at the root level"
+        );
+    }
+
+    #[test]
+    fn test_non_dictionary_string_root_fails() {
+        let mut destination = BufferDestination::new();
+        let node = make_node("test");
+        let result = stringify(&node, &mut destination);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_non_dictionary_list_root_fails() {
+        let mut destination = BufferDestination::new();
+        let node = make_node(vec![make_node(1), make_node(2)]);
+        let result = stringify(&node, &mut destination);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mixed_type_array_fails() {
+        let mut destination = BufferDestination::new();
+        let mut dict = HashMap::new();
+        // Array with mixed types: integer and string
+        dict.insert(
+            "mixed".to_string(),
+            make_node(vec![make_node(1), make_node("text")]),
+        );
+        let node = make_node(dict);
+        let result = stringify(&node, &mut destination);
+        assert!(result.is_err());
+        assert!(
+            result
+                .unwrap_err()
+                .contains("must contain elements of the same type")
+        );
+    }
+
+    #[test]
+    fn test_array_with_mixed_types_int_list() {
+        let mut destination = BufferDestination::new();
+        let mut dict = HashMap::new();
+        dict.insert(
+            "array".to_string(),
+            make_node(vec![make_node(1), make_node(vec![make_node(2)])]),
+        );
+        let node = make_node(dict);
+        let result = stringify(&node, &mut destination);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_empty_dictionary() {
+        let mut destination = BufferDestination::new();
+        let dict: HashMap<String, Node> = HashMap::new();
+        let node = make_node(dict);
+        let result = stringify(&node, &mut destination);
+        assert!(result.is_ok());
+        assert_eq!(destination.to_string(), "");
+    }
 }
