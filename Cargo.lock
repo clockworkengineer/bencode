@@ -10,8 +10,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "bencode_dictionary_ops"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
+name = "bencode_error_handling"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
 name = "bencode_fibonacci"
 version = "0.1.5"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
+name = "bencode_format_conversions"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
+name = "bencode_in_memory"
+version = "0.1.0"
 dependencies = [
  "bencode_lib",
 ]
@@ -24,6 +52,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "bencode_list_ops"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
+name = "bencode_node_api"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
 name = "bencode_read_torrent_files"
 version = "0.1.5"
 dependencies = [
@@ -32,8 +74,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "bencode_torrent_to_json"
+version = "0.1.5"
+dependencies = [
+ "bencode_lib",
+ "bencode_utility_lib",
+]
+
+[[package]]
 name = "bencode_torrent_to_toml"
 version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+ "bencode_utility_lib",
+]
+
+[[package]]
+name = "bencode_torrent_to_xml"
+version = "0.1.5"
 dependencies = [
  "bencode_lib",
  "bencode_utility_lib",

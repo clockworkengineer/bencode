@@ -21,7 +21,7 @@ fn process_torrent_file(file_path: &str) -> Result<(), String> {
     // Create a destination writer for the JSON file with the same name but .json extension
     let mut destination = FileDestination::new(Path::new(file_path).with_extension("json").to_string_lossy().as_ref()).map_err(|e| e.to_string())?;
     // Write the parsed data as JSON to the destination file
-    to_json(&node, &mut destination);
+    to_json(&node, &mut destination).map_err(|e| e.to_string())?;
     Ok(())
 }
 

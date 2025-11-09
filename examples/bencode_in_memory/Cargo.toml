@@ -1,0 +1,7 @@
+[package]
+name = "bencode_in_memory"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bencode_lib = { path = "../../library" }
