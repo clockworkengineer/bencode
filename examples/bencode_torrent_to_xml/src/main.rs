@@ -21,7 +21,7 @@ fn process_torrent_file(file_path: &str) -> Result<(), String> {
     // Create a destination file with .xml extension
     let mut destination = FileDestination::new(Path::new(file_path).with_extension("xml").to_string_lossy().as_ref()).map_err(|e| e.to_string())?;
     // Convert the node structure to XML and write to destination
-    to_xml(&node, &mut destination);
+    to_xml(&node, &mut destination)?;
     Ok(())
 }
 
