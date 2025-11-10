@@ -16,7 +16,6 @@ pub mod parser;
 pub mod stringify;
 
 /// Integration tests module
-#[cfg(test)]
 mod integration_tests;
 
 ///
