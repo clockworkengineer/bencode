@@ -2,10 +2,10 @@
 //! These tests validate the JSON stringify behavior from an external perspective,
 //! testing the public API against various node structures.
 
-use bencode_lib::BufferDestination;
-use bencode_lib::io::traits::IDestination;
-use bencode_lib::nodes::node::Node;
-use bencode_lib::stringify::json::stringify;
+use crate::BufferDestination;
+use crate::io::traits::IDestination;
+use crate::nodes::node::Node;
+use crate::stringify::json::stringify;
 use std::collections::HashMap;
 
 #[test]

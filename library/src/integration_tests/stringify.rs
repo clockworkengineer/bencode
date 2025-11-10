@@ -2,9 +2,9 @@
 //! These tests validate the stringify behavior from an external perspective,
 //! testing the public API against various node structures.
 
-use bencode_lib::BufferDestination;
-use bencode_lib::nodes::node::{Node, make_node};
-use bencode_lib::stringify::default::stringify;
+use crate::BufferDestination;
+use crate::nodes::node::{Node, make_node};
+use crate::stringify::default::stringify;
 use std::collections::HashMap;
 
 #[test]

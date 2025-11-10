@@ -15,6 +15,10 @@ pub mod parser;
 /// Module implementing serialization of data structures back to bencode format
 pub mod stringify;
 
+/// Integration tests module
+#[cfg(test)]
+mod integration_tests;
+
 ///
 /// Bencode_lib API
 ///

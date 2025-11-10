@@ -2,9 +2,9 @@
 //! These tests validate the XML stringify behavior from an external perspective,
 //! testing the public API against various node structures.
 
-use bencode_lib::BufferDestination;
-use bencode_lib::nodes::node::Node;
-use bencode_lib::stringify::xml::stringify;
+use crate::BufferDestination;
+use crate::nodes::node::Node;
+use crate::stringify::xml::stringify;
 use std::collections::HashMap;
 
 #[test]

@@ -1,8 +1,8 @@
 //! Integration tests for parser error handling.
 
-use bencode_lib::BufferSource;
-use bencode_lib::error::messages::*;
-use bencode_lib::parser::default::parse;
+use crate::BufferSource;
+use crate::error::messages::*;
+use crate::parser::default::parse;
 
 #[test]
 fn test_empty_input() {

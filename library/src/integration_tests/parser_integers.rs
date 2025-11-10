@@ -1,9 +1,9 @@
 //! Integration tests for parsing bencode integers.
 
-use bencode_lib::BufferSource;
-use bencode_lib::error::messages::*;
-use bencode_lib::nodes::node::Node;
-use bencode_lib::parser::default::parse;
+use crate::BufferSource;
+use crate::error::messages::*;
+use crate::nodes::node::Node;
+use crate::parser::default::parse;
 
 #[test]
 fn test_invalid_integer_format_fails() {

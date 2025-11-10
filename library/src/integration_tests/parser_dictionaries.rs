@@ -1,10 +1,10 @@
 //! Integration tests for parsing bencode dictionaries.
 
-use bencode_lib::BufferSource;
-use bencode_lib::Node::Dictionary;
-use bencode_lib::error::messages::*;
-use bencode_lib::nodes::node::Node;
-use bencode_lib::parser::default::parse;
+use crate::BufferSource;
+use crate::Node::Dictionary;
+use crate::error::messages::*;
+use crate::nodes::node::Node;
+use crate::parser::default::parse;
 
 #[test]
 fn test_empty_dictionary_works() {

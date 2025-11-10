@@ -2,10 +2,10 @@
 //! These tests validate the TOML stringify behavior from an external perspective,
 //! testing the public API against various node structures.
 
-use bencode_lib::BufferDestination;
-use bencode_lib::BufferSource;
-use bencode_lib::nodes::node::{Node, make_node};
-use bencode_lib::stringify::toml::stringify;
+use crate::BufferDestination;
+use crate::BufferSource;
+use crate::nodes::node::{Node, make_node};
+use crate::stringify::toml::stringify;
 use std::collections::HashMap;
 
 #[test]
@@ -137,7 +137,7 @@ fn test_stringify_nested_object_with_array() {
     let mut source = BufferSource::new(
         b"d4:infod5:filesld6:lengthi351874e4:pathl10:large.jpegeed6:lengthi100e4:pathl1:2eeeee",
     );
-    let node = bencode_lib::parse(&mut source).unwrap();
+    let node = crate::parse(&mut source).unwrap();
     let mut dest = BufferDestination::new();
     stringify(&node, &mut dest).unwrap();
     assert_eq!(
@@ -151,7 +151,7 @@ fn test_stringify_nested_object_with_array_and_object_and_array() {
     let mut source = BufferSource::new(
         b"d4:infod5:filesld6:lengthi351874e4:pathl10:large.jpegeed6:lengthi100e4:pathl1:2eeeee4:filesld6:lengthi351874e4:pathl10:large.jpege",
     );
-    let node = bencode_lib::parse(&mut source).unwrap();
+    let node = crate::parse(&mut source).unwrap();
     let mut dest = BufferDestination::new();
     stringify(&node, &mut dest).unwrap();
     assert_eq!(

@@ -1,6 +1,6 @@
 //! Integration tests for new features added to the bencode library
 
-use bencode_lib::{Node, parse_bytes, parse_str, stringify_to_string, stringify_to_bytes, make_node};
+use crate::{Node, parse_bytes, parse_str, stringify_to_string, stringify_to_bytes, make_node};
 use std::collections::HashMap;
 
 #[test]
