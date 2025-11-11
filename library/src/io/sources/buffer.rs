@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+use alloc::{string::String, vec::Vec};
+
 use crate::io::traits::ISource;
 
 /// A memory buffer implementation for reading bencode data from bytes.
@@ -18,7 +21,10 @@ impl Buffer {
     /// # Returns
     /// A new Buffer containing the provided bytes
     pub fn new(to_add: &[u8]) -> Self {
-        Self { buffer : to_add.to_vec(), position: 0 }
+        Self {
+            buffer: to_add.to_vec(),
+            position: 0,
+        }
     }
     /// Converts the buffer content to a String.
     ///
@@ -56,32 +62,48 @@ mod tests {
     use super::*;
     #[test]
     fn create_source_buffer_works() {
-        let  source = Buffer::new(String::from("i32e").as_bytes());
+        let source = Buffer::new(String::from("i32e").as_bytes());
         assert_eq!(source.to_string(), "i32e");
     }
     #[test]
     fn read_character_from_source_buffer_works() {
-        let  mut source = Buffer::new(String::from("i32e").as_bytes());
-        match source.current() { Some('i') => assert!(true), _ => assert!(false)}
+        let mut source = Buffer::new(String::from("i32e").as_bytes());
+        match source.current() {
+            Some('i') => assert!(true),
+            _ => assert!(false),
+        }
     }
     #[test]
     fn move_to_next_character_in_source_buffer_works() {
-        let  mut source = Buffer::new(String::from("i32e").as_bytes());
+        let mut source = Buffer::new(String::from("i32e").as_bytes());
         source.next();
-        match source.current() { Some('3') => assert!(true), _ => assert!(false)}
+        match source.current() {
+            Some('3') => assert!(true),
+            _ => assert!(false),
+        }
     }
     #[test]
     fn move_to_last_character_in_source_buffer_works() {
-        let  mut source = Buffer::new(String::from("i32e").as_bytes());
-        while source.more() { source.next()}
-        match source.current() { None => assert!(true), _ => assert!(false)}
+        let mut source = Buffer::new(String::from("i32e").as_bytes());
+        while source.more() {
+            source.next()
+        }
+        match source.current() {
+            None => assert!(true),
+            _ => assert!(false),
+        }
     }
     #[test]
     fn reset_in_source_buffer_works() {
-        let  mut source = Buffer::new(String::from("i32e").as_bytes());
-        while source.more() { source.next()}
+        let mut source = Buffer::new(String::from("i32e").as_bytes());
+        while source.more() {
+            source.next()
+        }
         source.reset();
-        match source.current() { Some('i') => assert!(true), _ => assert!(false)}
+        match source.current() {
+            Some('i') => assert!(true),
+            _ => assert!(false),
+        }
     }
     #[test]
     fn create_empty_buffer_works() {
@@ -107,7 +129,7 @@ mod tests {
         source.next();
         match source.current() {
             Some('c') => assert!(true),
-            _ => assert!(false)
+            _ => assert!(false),
         }
     }
 }

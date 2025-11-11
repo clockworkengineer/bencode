@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+use alloc::string::{String, ToString};
+
 use crate::io::traits::IDestination;
 use crate::nodes::node::*;
 use crate::stringify::common::escape_string;

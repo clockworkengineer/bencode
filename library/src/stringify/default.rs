@@ -1,6 +1,9 @@
 //! Module providing functionality to convert bencode nodes into their string representation.
 //! Implements the bencode encoding rules for different node types.
 
+#[cfg(not(feature = "std"))]
+use alloc::{format, string::String, vec::Vec};
+
 use crate::io::traits::IDestination;
 use crate::nodes::node::*;
 

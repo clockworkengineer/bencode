@@ -1,11 +1,17 @@
 //! Default parser implementation for bencode format.
 //! Provides functionality to parse bencode-encoded data into Node structures.
 
+#[cfg(not(feature = "std"))]
+use alloc::{
+    string::{String, ToString},
+    vec,
+};
+
+use crate::HashMap;
 use crate::Node::Dictionary;
 use crate::error::messages::*;
 use crate::io::traits::ISource;
 use crate::nodes::node::Node;
-use std::collections::HashMap;
 
 /// Start marker for bencode integer values ('i')
 /// Format: i<digits>e
@@ -171,7 +177,8 @@ fn parse_list(source: &mut dyn ISource) -> Result<Node, String> {
             source.next();
             return Ok(list);
         }
-        list.add_to_list(parse(source)?);
+        list.add_to_list(parse(source)?)
+            .map_err(|e| e.to_string())?;
     }
     Err(ERR_UNTERMINATED_LIST.to_string())
 }
@@ -200,7 +207,8 @@ fn parse_dictionary(source: &mut dyn ISource) -> Result<Node, String> {
                 }
                 last_key = key.clone();
                 let value = parse(source)?;
-                dict.add_to_dictionary(&key, value);
+                dict.add_to_dictionary(&key, value)
+                    .map_err(|e| e.to_string())?;
             }
             _ => return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string()),
         }

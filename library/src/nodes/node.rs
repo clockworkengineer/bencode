@@ -1,5 +1,12 @@
+#[cfg(not(feature = "std"))]
+use alloc::collections::BTreeMap as HashMap;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
-use std::fmt;
+
+#[cfg(not(feature = "std"))]
+use alloc::{string::{String, ToString}, vec::Vec};
+
+use core::fmt;
 
 /// A node in the bencode data structure that can represent different types of values.
 #[derive(Clone, Debug, PartialEq)]
@@ -17,19 +24,23 @@ pub enum Node {
 }
 
 impl Node {
-    pub(crate) fn add_to_list(&mut self, p0: Node) {
+    pub(crate) fn add_to_list(&mut self, p0: Node) -> Result<(), &'static str> {
         match self {
-            Node::List(list) => list.push(p0),
-            _ => panic!("Can't push to a non-list node"),
+            Node::List(list) => {
+                list.push(p0);
+                Ok(())
+            }
+            _ => Err("Cannot add to non-list node"),
         }
     }
 
-    pub(crate) fn add_to_dictionary(&mut self, key: &str, p0: Node) {
+    pub(crate) fn add_to_dictionary(&mut self, key: &str, p0: Node) -> Result<(), &'static str> {
         match self {
             Node::Dictionary(dict) => {
                 let _ = dict.insert(key.to_string(), p0);
+                Ok(())
             }
-            _ => panic!("Can't push to a non-list node"),
+            _ => Err("Cannot add to non-dictionary node"),
         }
     }
 
@@ -208,7 +219,7 @@ where
     V: Into<Node>,
 {
     fn from(value: [(K, V); N]) -> Self {
-        let mut map: HashMap<String, Node> = HashMap::with_capacity(N);
+        let mut map: HashMap<String, Node> = HashMap::new();
         for (k, v) in value.into_iter() {
             map.insert(k.into(), v.into());
         }
@@ -554,27 +565,29 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Can't push to a non-list node")]
-    fn test_add_to_list_panic() {
+    fn test_add_to_list_error() {
         let mut node = Node::Integer(0);
-        node.add_to_list(Node::Integer(42));
+        let result = node.add_to_list(Node::Integer(42));
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Cannot add to non-list node");
     }
 
     #[test]
     fn test_add_to_dictionary() {
         let mut node = Node::Dictionary(HashMap::new());
-        node.add_to_dictionary("test", Node::Integer(42));
+        assert!(node.add_to_dictionary("test", Node::Integer(42)).is_ok());
         match node {
             Node::Dictionary(dict) => assert_eq!(dict["test"], Node::Integer(42)),
-            _ => assert_eq!(false, true),
+            _ => panic!("Expected dictionary"),
         }
     }
 
     #[test]
-    #[should_panic(expected = "Can't push to a non-list node")]
-    fn test_add_to_dictionary_panic() {
+    fn test_add_to_dictionary_error() {
         let mut node = Node::Integer(0);
-        node.add_to_dictionary("test", Node::Integer(42));
+        let result = node.add_to_dictionary("test", Node::Integer(42));
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Cannot add to non-dictionary node");
     }
 
     #[test]

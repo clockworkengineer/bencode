@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+use alloc::{format, string::String};
+
 /// Centralized error messages for the bencode library.
 /// Keep all user-visible error strings and small helpers here to ensure consistency.
 
