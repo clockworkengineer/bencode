@@ -14,7 +14,7 @@ use core::fmt;
 
 /// A borrowed node that references data from the input buffer without allocation.
 /// This is useful for embedded systems where memory is limited.
-/// 
+///
 /// The lifetime parameter 'a represents the lifetime of the borrowed input data.
 #[derive(Clone, Debug, PartialEq)]
 pub enum BorrowedNode<'a> {

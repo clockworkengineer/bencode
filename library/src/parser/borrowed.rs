@@ -8,7 +8,10 @@ use alloc::collections::BTreeMap as HashMap;
 use std::collections::HashMap;
 
 #[cfg(not(feature = "std"))]
-use alloc::{string::{String, ToString}, vec::Vec};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 
 use crate::error::messages::*;
 use crate::nodes::borrowed::BorrowedNode;
@@ -20,7 +23,7 @@ const BENCODE_END: u8 = b'e';
 const BENCODE_STRING_DELIMITER: u8 = b':';
 
 /// Parses bencode data from a byte slice without allocation, returning borrowed nodes.
-/// 
+///
 /// This is a zero-copy parser suitable for embedded systems with limited memory.
 /// The returned node tree contains references to the input buffer rather than
 /// owned copies of the data.
@@ -35,7 +38,7 @@ const BENCODE_STRING_DELIMITER: u8 = b':';
 /// # Example
 /// ```
 /// use bencode_lib::parse_borrowed;
-/// 
+///
 /// let data = b"i42e";
 /// let node = parse_borrowed(data).unwrap();
 /// assert_eq!(node.as_integer(), Some(42));
@@ -78,9 +81,8 @@ fn parse_integer<'a>(input: &'a [u8], position: &mut usize) -> Result<BorrowedNo
 
     // Parse the integer from the slice
     let int_slice = &input[start..end];
-    let int_str = core::str::from_utf8(int_slice)
-        .map_err(|_| ERR_INVALID_INTEGER.to_string())?;
-    
+    let int_str = core::str::from_utf8(int_slice).map_err(|_| ERR_INVALID_INTEGER.to_string())?;
+
     let value = int_str
         .parse::<i64>()
         .map_err(|_| ERR_INVALID_INTEGER.to_string())?;
@@ -105,9 +107,9 @@ fn parse_bytes<'a>(input: &'a [u8], position: &mut usize) -> Result<BorrowedNode
 
     // Parse the length
     let length_slice = &input[start..end];
-    let length_str = core::str::from_utf8(length_slice)
-        .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())?;
-    
+    let length_str =
+        core::str::from_utf8(length_slice).map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())?;
+
     let length = length_str
         .parse::<usize>()
         .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())?;
@@ -182,7 +184,7 @@ fn parse_dictionary<'a>(input: &'a [u8], position: &mut usize) -> Result<Borrowe
 }
 
 /// Validates bencode data without building a node tree.
-/// 
+///
 /// This is useful for quickly checking if data is valid bencode without
 /// allocating memory for the parsed structure. Ideal for embedded systems
 /// that need to validate data before committing memory resources.
@@ -197,19 +199,19 @@ fn parse_dictionary<'a>(input: &'a [u8], position: &mut usize) -> Result<Borrowe
 /// # Example
 /// ```
 /// use bencode_lib::validate_bencode;
-/// 
+///
 /// assert!(validate_bencode(b"i42e").is_ok());
 /// assert!(validate_bencode(b"invalid").is_err());
 /// ```
 pub fn validate_bencode(input: &[u8]) -> Result<(), String> {
     let mut position = 0;
     validate_node(input, &mut position)?;
-    
+
     // Ensure we consumed all input
     if position != input.len() {
         return Err("Trailing data after bencode structure".to_string());
     }
-    
+
     Ok(())
 }
 
@@ -243,9 +245,8 @@ fn validate_integer(input: &[u8], position: &mut usize) -> Result<(), String> {
     }
 
     let int_slice = &input[start..end];
-    let int_str = core::str::from_utf8(int_slice)
-        .map_err(|_| ERR_INVALID_INTEGER.to_string())?;
-    
+    let int_str = core::str::from_utf8(int_slice).map_err(|_| ERR_INVALID_INTEGER.to_string())?;
+
     int_str
         .parse::<i64>()
         .map_err(|_| ERR_INVALID_INTEGER.to_string())?;
@@ -267,9 +268,9 @@ fn validate_bytes(input: &[u8], position: &mut usize) -> Result<(), String> {
     }
 
     let length_slice = &input[start..end];
-    let length_str = core::str::from_utf8(length_slice)
-        .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())?;
-    
+    let length_str =
+        core::str::from_utf8(length_slice).map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())?;
+
     let length = length_str
         .parse::<usize>()
         .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())?;
@@ -318,23 +319,24 @@ fn validate_dictionary(input: &[u8], position: &mut usize) -> Result<(), String>
         while len_end < input.len() && input[len_end] != BENCODE_STRING_DELIMITER {
             len_end += 1;
         }
-        
+
         if len_end >= input.len() {
             return Err(ERR_INVALID_STRING_LENGTH.to_string());
         }
-        
+
         let length_str = core::str::from_utf8(&input[len_start..len_end])
             .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())?;
-        let length = length_str.parse::<usize>()
+        let length = length_str
+            .parse::<usize>()
             .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())?;
-        
+
         let key_bytes_start = len_end + 1; // Skip ':'
         let key_bytes_end = key_bytes_start + length;
-        
+
         if key_bytes_end > input.len() {
             return Err(ERR_STRING_TOO_SHORT.to_string());
         }
-        
+
         // Check key ordering
         if !first_key {
             let prev_key = &input[last_key_start..last_key_start + last_key_len];
@@ -343,11 +345,11 @@ fn validate_dictionary(input: &[u8], position: &mut usize) -> Result<(), String>
                 return Err(ERR_DICT_KEYS_ORDER.to_string());
             }
         }
-        
+
         last_key_start = key_bytes_start;
         last_key_len = length;
         first_key = false;
-        
+
         *position = key_bytes_end;
 
         // Validate value

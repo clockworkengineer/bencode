@@ -12,7 +12,7 @@ fn main() {
     // Example 1: Parse an integer
     let int_data = b"i42e";
     println!("Input: {:?}", core::str::from_utf8(int_data).unwrap());
-    
+
     match parse_borrowed(int_data) {
         Ok(node) => {
             println!("Parsed: {}", node);
@@ -26,7 +26,7 @@ fn main() {
     // Example 2: Parse a byte string (no allocation!)
     let str_data = b"13:Hello, World!";
     println!("Input: {:?}", core::str::from_utf8(str_data).unwrap());
-    
+
     match parse_borrowed(str_data) {
         Ok(node) => {
             println!("Parsed: {}", node);
@@ -41,7 +41,7 @@ fn main() {
     // Example 3: Parse a list
     let list_data = b"li1ei2ei3e5:helloe";
     println!("Input: {:?}", core::str::from_utf8(list_data).unwrap());
-    
+
     match parse_borrowed(list_data) {
         Ok(node) => {
             println!("Parsed: {}", node);
@@ -59,7 +59,7 @@ fn main() {
     // Example 4: Parse a dictionary (keys must be in lexicographic order)
     let dict_data = b"d3:agei25e4:name3:Bob5:scorei100e6:statusd6:active4:trueee";
     println!("Input: {:?}", core::str::from_utf8(dict_data).unwrap());
-    
+
     match parse_borrowed(dict_data) {
         Ok(node) => {
             println!("Parsed: {}", node);
@@ -77,16 +77,22 @@ fn main() {
 
     // Example 5: Validation without parsing (minimal memory usage)
     println!("=== Validation-Only Mode ===\n");
-    
+
     let valid_data = b"d4:name8:test.txt4:sizei1024ee";
-    println!("Validating: {:?}", core::str::from_utf8(valid_data).unwrap());
+    println!(
+        "Validating: {:?}",
+        core::str::from_utf8(valid_data).unwrap()
+    );
     match validate_bencode(valid_data) {
         Ok(_) => println!("✓ Valid bencode\n"),
         Err(e) => println!("✗ Invalid: {}\n", e),
     }
 
     let invalid_data = b"i42"; // Missing end marker
-    println!("Validating: {:?}", core::str::from_utf8(invalid_data).unwrap());
+    println!(
+        "Validating: {:?}",
+        core::str::from_utf8(invalid_data).unwrap()
+    );
     match validate_bencode(invalid_data) {
         Ok(_) => println!("✓ Valid bencode\n"),
         Err(e) => println!("✗ Invalid: {}\n", e),
@@ -94,17 +100,17 @@ fn main() {
 
     // Example 6: Memory efficiency demonstration
     println!("=== Memory Efficiency ===\n");
-    
+
     let large_data = b"l5:item15:item25:item35:item45:item5e";
     println!("Input size: {} bytes", large_data.len());
-    
+
     match parse_borrowed(large_data) {
         Ok(node) => {
             println!("Parsed without copying any string data!");
             println!("All strings are borrowed from the original buffer.");
             if let Some(list) = node.as_list() {
                 println!("List contains {} items", list.len());
-                
+
                 // Demonstrate that the bytes are actually borrowed
                 for (i, item) in list.iter().enumerate() {
                     if let Some(bytes) = item.as_bytes() {
@@ -120,9 +126,9 @@ fn main() {
 
     // Example 7: Torrent-like structure
     println!("=== Torrent-Like Structure (Zero-Copy) ===\n");
-    
+
     let torrent_data = b"d8:announce32:http://example.com:6969/announce4:infod6:lengthi104857600e4:name10:ubuntu.isoee";
-    
+
     match parse_borrowed(torrent_data) {
         Ok(node) => {
             if let Some(dict) = node.as_dictionary() {
@@ -130,7 +136,7 @@ fn main() {
                 if let Some(BorrowedNode::Bytes(announce)) = dict.get(&b"announce"[..]) {
                     println!("Announce: {}", core::str::from_utf8(announce).unwrap());
                 }
-                
+
                 // Access info dictionary
                 if let Some(BorrowedNode::Dictionary(info)) = dict.get(&b"info"[..]) {
                     if let Some(BorrowedNode::Integer(length)) = info.get(&b"length"[..]) {
