@@ -59,6 +59,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bencode_memory_pool"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
 name = "bencode_node_api"
 version = "0.1.0"
 dependencies = [

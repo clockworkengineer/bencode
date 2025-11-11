@@ -25,6 +25,8 @@ pub mod io;
 /// Module containing utility functions and helper methods
 pub mod misc;
 
+/// Module providing memory management utilities for embedded systems
+pub mod memory;
 /// Module defining the core data structures for representing bencode nodes
 pub mod nodes;
 /// Module containing the parsing logic to decode bencode format into data structures
@@ -82,6 +84,14 @@ pub use parser::default::parse_str;
 pub use parser::borrowed::parse_borrowed;
 /// Validates bencode data without building a node tree (minimal allocation)
 pub use parser::borrowed::validate_bencode;
+
+/// Arena allocator for bump allocation from fixed buffers
+pub use memory::Arena;
+/// Memory usage tracker for embedded systems
+pub use memory::MemoryTracker;
+/// Stack-based fixed-size buffer
+pub use memory::StackBuffer;
+
 /// Converts a Node tree back to bencode format
 pub use stringify::default::stringify;
 /// Converts a Node tree to bencode format as bytes
