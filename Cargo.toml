@@ -17,4 +17,5 @@ members = [
     "examples/bencode_list_ops",
     "examples/bencode_error_handling",
     "examples/bencode_format_conversions",
+    "examples/bencode_zerocopy",
 ]

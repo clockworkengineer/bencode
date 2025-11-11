@@ -110,6 +110,13 @@ name = "bencode_utility_lib"
 version = "0.1.5"
 
 [[package]]
+name = "bencode_zerocopy"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
 name = "bitflags"
 version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

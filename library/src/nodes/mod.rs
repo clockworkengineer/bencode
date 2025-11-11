@@ -11,3 +11,6 @@
 /// * Lists (ordered sequences)
 /// * Dictionaries (key-value pairs)
 pub mod node;
+
+/// Zero-copy borrowed node implementation for embedded systems
+pub mod borrowed;

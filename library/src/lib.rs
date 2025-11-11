@@ -68,12 +68,20 @@ pub use io::sources::file::File as FileSource;
 pub use nodes::node::Node;
 pub use nodes::node::make_node;
 
+/// Zero-copy borrowed node for embedded systems (no allocation)
+pub use nodes::borrowed::BorrowedNode;
+
 /// Parses bencode data into a Node tree structure
 pub use parser::default::parse;
 /// Parses bencode data from a byte slice into a Node tree structure
 pub use parser::default::parse_bytes;
 /// Parses bencode data from a string into a Node tree structure
 pub use parser::default::parse_str;
+
+/// Zero-copy parser that returns borrowed nodes (no allocation)
+pub use parser::borrowed::parse_borrowed;
+/// Validates bencode data without building a node tree (minimal allocation)
+pub use parser::borrowed::validate_bencode;
 /// Converts a Node tree back to bencode format
 pub use stringify::default::stringify;
 /// Converts a Node tree to bencode format as bytes
