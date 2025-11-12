@@ -14,3 +14,6 @@ pub mod node;
 
 /// Zero-copy borrowed node implementation for embedded systems
 pub mod borrowed;
+
+/// Fixed-capacity node implementation using const generics
+pub mod fixed;

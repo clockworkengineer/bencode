@@ -73,6 +73,11 @@ pub use nodes::node::make_node;
 /// Zero-copy borrowed node for embedded systems (no allocation)
 pub use nodes::borrowed::BorrowedNode;
 
+/// Type alias for fixed-size stack buffers with const generics
+pub use nodes::fixed::FixedSizeBuffer;
+/// Memory bounds calculator using const generics
+pub use nodes::fixed::MemoryBounds;
+
 /// Parses bencode data into a Node tree structure
 pub use parser::default::parse;
 /// Parses bencode data from a byte slice into a Node tree structure
@@ -98,11 +103,19 @@ pub use stringify::default::stringify;
 pub use stringify::default::stringify_to_bytes;
 /// Converts a Node tree to bencode format as a String
 pub use stringify::default::stringify_to_string;
-/// Converts a Node tree to JSON format
+
+/// Converts a Node tree to JSON format (requires "json" feature)
+#[cfg(feature = "json")]
 pub use stringify::json::stringify as to_json;
-/// Converts a Node tree to TOML format
+
+/// Converts a Node tree to TOML format (requires "toml" feature)
+#[cfg(feature = "toml")]
 pub use stringify::toml::stringify as to_toml;
-/// Converts a Node tree to XML format
+
+/// Converts a Node tree to XML format (requires "xml" feature)
+#[cfg(feature = "xml")]
 pub use stringify::xml::stringify as to_xml;
-/// Converts a Node tree to YAML format
+
+/// Converts a Node tree to YAML format (requires "yaml" feature)
+#[cfg(feature = "yaml")]
 pub use stringify::yaml::stringify as to_yaml;

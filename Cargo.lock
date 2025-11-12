@@ -3,6 +3,13 @@
 version = 4
 
 [[package]]
+name = "bencode_const_generics"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
 name = "bencode_create_at_runtime"
 version = "0.1.5"
 dependencies = [
@@ -38,6 +45,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bencode_full"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
 name = "bencode_in_memory"
 version = "0.1.0"
 dependencies = [
@@ -60,6 +74,13 @@ dependencies = [
 
 [[package]]
 name = "bencode_memory_pool"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
+name = "bencode_minimal"
 version = "0.1.0"
 dependencies = [
  "bencode_lib",
