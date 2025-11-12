@@ -1,2 +1,2 @@
-pub mod messages;
 pub mod embedded;
+pub mod messages;

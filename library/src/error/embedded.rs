@@ -1,5 +1,5 @@
 //! Lightweight error types for embedded systems
-//! 
+//!
 //! This module provides error types that don't require heap allocation,
 //! making them suitable for no_std environments with limited memory.
 
@@ -11,37 +11,37 @@ use core::fmt;
 pub enum BencodeError {
     /// Input was empty or exhausted unexpectedly
     EmptyInput,
-    
+
     /// Invalid integer format (e.g., non-numeric characters, -0, etc.)
     InvalidInteger,
-    
+
     /// Integer not properly terminated with 'e'
     UnterminatedInteger,
-    
+
     /// String length prefix is invalid or not a valid number
     InvalidStringLength,
-    
+
     /// String content is shorter than declared length
     StringTooShort,
-    
+
     /// List not properly terminated with 'e'
     UnterminatedList,
-    
+
     /// Dictionary not properly terminated with 'e'
     UnterminatedDictionary,
-    
+
     /// Dictionary keys must be in lexicographic order
     DictKeysOutOfOrder,
-    
+
     /// Dictionary key must be a string type
     DictKeyMustBeString,
-    
+
     /// Encountered an unexpected character (stores the character)
     UnexpectedCharacter(char),
-    
+
     /// File not found (for std environments)
     FileNotFound,
-    
+
     /// Generic IO error
     IoError,
 }
@@ -65,7 +65,7 @@ impl BencodeError {
             BencodeError::IoError => "IO error",
         }
     }
-    
+
     /// Returns the error code as a u8 for compact error reporting
     pub const fn code(&self) -> u8 {
         match self {
@@ -171,7 +171,7 @@ mod tests {
             BencodeError::FileNotFound,
             BencodeError::IoError,
         ];
-        
+
         for i in 0..errors.len() {
             for j in (i + 1)..errors.len() {
                 assert_ne!(errors[i].code(), errors[j].code());
