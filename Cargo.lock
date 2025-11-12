@@ -73,6 +73,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bencode_lightweight_errors"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
 name = "bencode_list_ops"
 version = "0.1.0"
 dependencies = [

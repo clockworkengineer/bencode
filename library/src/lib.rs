@@ -104,6 +104,9 @@ pub use memory::MemoryTracker;
 /// Stack-based fixed-size buffer
 pub use memory::StackBuffer;
 
+/// Lightweight error type for embedded systems (no heap allocation)
+pub use error::embedded::BencodeError;
+
 /// Converts a Node tree back to bencode format
 pub use stringify::default::stringify;
 /// Converts a Node tree to bencode format as bytes
