@@ -90,6 +90,13 @@ pub use parser::borrowed::parse_borrowed;
 /// Validates bencode data without building a node tree (minimal allocation)
 pub use parser::borrowed::validate_bencode;
 
+/// Parses bencode data from a byte slice using iterative parser
+pub use parser::iterative::parse_bytes_iterative;
+/// Iterative parser that avoids recursion (for deeply nested structures)
+pub use parser::iterative::parse_iterative;
+/// Parses bencode data from a string using iterative parser
+pub use parser::iterative::parse_str_iterative;
+
 /// Arena allocator for bump allocation from fixed buffers
 pub use memory::Arena;
 /// Memory usage tracker for embedded systems
