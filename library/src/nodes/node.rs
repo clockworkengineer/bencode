@@ -167,15 +167,15 @@ impl Node {
             Node::None => "none",
         }
     }
-    
+
     // Validation helpers
-    
+
     /// Get a required field from a dictionary, returning an error if not found
     pub fn get_required(&self, key: &str) -> Result<&Node, String> {
         self.get(key)
             .ok_or_else(|| format!("Missing required field: '{}'", key))
     }
-    
+
     /// Get a required integer field from a dictionary
     pub fn get_int_required(&self, key: &str) -> Result<i64, String> {
         self.get_required(key)?
@@ -183,43 +183,43 @@ impl Node {
             .copied()
             .ok_or_else(|| format!("Field '{}' must be an integer", key))
     }
-    
+
     /// Get a required string field from a dictionary
     pub fn get_string_required(&self, key: &str) -> Result<&str, String> {
         self.get_required(key)?
             .as_string()
             .ok_or_else(|| format!("Field '{}' must be a string", key))
     }
-    
+
     /// Get a required list field from a dictionary
     pub fn get_list_required(&self, key: &str) -> Result<&Vec<Node>, String> {
         self.get_required(key)?
             .as_list()
             .ok_or_else(|| format!("Field '{}' must be a list", key))
     }
-    
+
     /// Get a required dictionary field from a dictionary
     pub fn get_dict_required(&self, key: &str) -> Result<&HashMap<String, Node>, String> {
         self.get_required(key)?
             .as_dictionary()
             .ok_or_else(|| format!("Field '{}' must be a dictionary", key))
     }
-    
+
     /// Get an optional integer field, returning None if not found or not an integer
     pub fn get_int_optional(&self, key: &str) -> Option<i64> {
         self.get(key).and_then(|n| n.as_integer()).copied()
     }
-    
+
     /// Get an optional string field, returning None if not found or not a string
     pub fn get_string_optional(&self, key: &str) -> Option<&str> {
         self.get(key).and_then(|n| n.as_string())
     }
-    
+
     /// Get an optional list field, returning None if not found or not a list
     pub fn get_list_optional(&self, key: &str) -> Option<&Vec<Node>> {
         self.get(key).and_then(|n| n.as_list())
     }
-    
+
     /// Get an optional dictionary field, returning None if not found or not a dictionary
     pub fn get_dict_optional(&self, key: &str) -> Option<&HashMap<String, Node>> {
         self.get(key).and_then(|n| n.as_dictionary())
@@ -840,7 +840,7 @@ mod tests {
         let mut dict = HashMap::new();
         dict.insert("key".to_string(), Node::Integer(42));
         let node = Node::Dictionary(dict);
-        
+
         assert!(node.get_required("key").is_ok());
         assert!(node.get_required("missing").is_err());
     }
@@ -851,7 +851,7 @@ mod tests {
         dict.insert("age".to_string(), Node::Integer(25));
         dict.insert("name".to_string(), Node::Str("John".to_string()));
         let node = Node::Dictionary(dict);
-        
+
         assert_eq!(node.get_int_required("age").unwrap(), 25);
         assert!(node.get_int_required("name").is_err());
         assert!(node.get_int_required("missing").is_err());
@@ -863,7 +863,7 @@ mod tests {
         dict.insert("name".to_string(), Node::Str("John".to_string()));
         dict.insert("age".to_string(), Node::Integer(25));
         let node = Node::Dictionary(dict);
-        
+
         assert_eq!(node.get_string_required("name").unwrap(), "John");
         assert!(node.get_string_required("age").is_err());
         assert!(node.get_string_required("missing").is_err());
@@ -872,10 +872,13 @@ mod tests {
     #[test]
     fn test_get_list_required() {
         let mut dict = HashMap::new();
-        dict.insert("items".to_string(), Node::List(vec![Node::Integer(1), Node::Integer(2)]));
+        dict.insert(
+            "items".to_string(),
+            Node::List(vec![Node::Integer(1), Node::Integer(2)]),
+        );
         dict.insert("name".to_string(), Node::Str("test".to_string()));
         let node = Node::Dictionary(dict);
-        
+
         assert_eq!(node.get_list_required("items").unwrap().len(), 2);
         assert!(node.get_list_required("name").is_err());
         assert!(node.get_list_required("missing").is_err());
@@ -885,12 +888,12 @@ mod tests {
     fn test_get_dict_required() {
         let mut inner = HashMap::new();
         inner.insert("x".to_string(), Node::Integer(1));
-        
+
         let mut dict = HashMap::new();
         dict.insert("nested".to_string(), Node::Dictionary(inner));
         dict.insert("value".to_string(), Node::Integer(42));
         let node = Node::Dictionary(dict);
-        
+
         assert_eq!(node.get_dict_required("nested").unwrap().len(), 1);
         assert!(node.get_dict_required("value").is_err());
         assert!(node.get_dict_required("missing").is_err());
@@ -903,15 +906,15 @@ mod tests {
         dict.insert("name".to_string(), Node::Str("John".to_string()));
         dict.insert("items".to_string(), Node::List(vec![Node::Integer(1)]));
         let node = Node::Dictionary(dict);
-        
+
         assert_eq!(node.get_int_optional("age"), Some(25));
         assert_eq!(node.get_int_optional("name"), None);
         assert_eq!(node.get_int_optional("missing"), None);
-        
+
         assert_eq!(node.get_string_optional("name"), Some("John"));
         assert_eq!(node.get_string_optional("age"), None);
         assert_eq!(node.get_string_optional("missing"), None);
-        
+
         assert_eq!(node.get_list_optional("items").map(|l| l.len()), Some(1));
         assert_eq!(node.get_list_optional("age"), None);
         assert_eq!(node.get_list_optional("missing"), None);

@@ -25,10 +25,10 @@ pub mod io;
 /// Module containing utility functions and helper methods
 pub mod misc;
 
-/// Module providing memory management utilities for embedded systems
-pub mod memory;
 /// Module containing configuration options for parsing and encoding
 pub mod config;
+/// Module providing memory management utilities for embedded systems
+pub mod memory;
 /// Module defining the core data structures for representing bencode nodes
 pub mod nodes;
 /// Module containing the parsing logic to decode bencode format into data structures
@@ -109,10 +109,10 @@ pub use memory::StackBuffer;
 /// Lightweight error type for embedded systems (no heap allocation)
 pub use error::embedded::BencodeError;
 
-/// Parser configuration options
-pub use config::ParserConfig;
 /// Encoder configuration options
 pub use config::EncoderConfig;
+/// Parser configuration options
+pub use config::ParserConfig;
 
 /// Converts a Node tree back to bencode format
 pub use stringify::default::stringify;
