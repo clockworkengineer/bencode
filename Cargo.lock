@@ -152,6 +152,13 @@ name = "bencode_utility_lib"
 version = "0.1.5"
 
 [[package]]
+name = "bencode_validation"
+version = "0.1.0"
+dependencies = [
+ "bencode_lib",
+]
+
+[[package]]
 name = "bencode_zerocopy"
 version = "0.1.0"
 dependencies = [

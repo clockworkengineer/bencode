@@ -24,4 +24,5 @@ members = [
     "examples/bencode_full",
     "examples/bencode_iterative",
     "examples/bencode_lightweight_errors",
+    "examples/bencode_validation",
 ]
