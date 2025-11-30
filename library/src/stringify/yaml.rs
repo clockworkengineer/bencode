@@ -1,6 +1,13 @@
 //! YAML serialization functionality for Bencode nodes.
 //! Provides methods to convert Bencode data structures into YAML formatted output.
 
+#[cfg(not(feature = "std"))]
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
+
 use crate::io::traits::IDestination;
 use crate::nodes::node::*;
 use crate::stringify::common::escape_string;

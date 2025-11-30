@@ -14,10 +14,23 @@
 //! - Proper nesting of tables and sub-tables
 //!
 
+#[cfg(not(feature = "std"))]
+use alloc::collections::BTreeMap;
+#[cfg(not(feature = "std"))]
+use alloc::collections::BTreeMap as HashMap;
+#[cfg(not(feature = "std"))]
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
+
+#[cfg(feature = "std")]
+use std::collections::{BTreeMap, HashMap};
+
 use crate::Node;
 use crate::io::traits::IDestination;
 use crate::stringify::common::escape_string;
-use std::collections::{BTreeMap, HashMap};
 
 /// Converts a Node structure to a TOML formatted string
 ///
@@ -179,7 +192,7 @@ fn stringify_key_value_pair(
 /// * `Ok(())` if conversion was successful
 /// * `Err(String)` if an error occurred during conversion
 fn stringify_object(
-    dict: &std::collections::HashMap<String, Node>,
+    dict: &HashMap<String, Node>,
     prefix: &str,
     destination: &mut dyn IDestination,
 ) -> Result<(), String> {
@@ -282,7 +295,7 @@ fn process_key_value_pairs<'a>(
 /// * `Ok(())` if successful
 /// * `Err(String)` if an error occurred during processing
 fn process_nested_tables(
-    tables: &BTreeMap<&String, &std::collections::HashMap<String, Node>>,
+    tables: &BTreeMap<&String, &HashMap<String, Node>>,
     prefix: &str,
     destination: &mut dyn IDestination,
 ) -> Result<(), String> {
@@ -338,7 +351,7 @@ fn process_array_tables(
 /// * `Ok(())` if successful
 /// * `Err(String)` if an error occurred during processing
 fn process_nested_array_table(
-    nested: &std::collections::HashMap<String, Node>,
+    nested: &HashMap<String, Node>,
     new_prefix: &str,
     destination: &mut dyn IDestination,
 ) -> Result<(), String> {

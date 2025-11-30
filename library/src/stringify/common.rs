@@ -1,3 +1,6 @@
+#[cfg(not(feature = "std"))]
+use alloc::format;
+
 use crate::io::traits::IDestination;
 
 /// Escapes and writes a string value to the destination, handling special characters

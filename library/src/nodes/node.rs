@@ -1,5 +1,15 @@
+#[cfg(not(feature = "std"))]
+use alloc::collections::BTreeMap as HashMap;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
-use std::fmt;
+
+#[cfg(not(feature = "std"))]
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
+
+use core::fmt;
 
 /// A node in the bencode data structure that can represent different types of values.
 #[derive(Clone, Debug, PartialEq)]
@@ -17,19 +27,23 @@ pub enum Node {
 }
 
 impl Node {
-    pub(crate) fn add_to_list(&mut self, p0: Node) {
+    pub(crate) fn add_to_list(&mut self, p0: Node) -> Result<(), &'static str> {
         match self {
-            Node::List(list) => list.push(p0),
-            _ => panic!("Can't push to a non-list node"),
+            Node::List(list) => {
+                list.push(p0);
+                Ok(())
+            }
+            _ => Err("Cannot add to non-list node"),
         }
     }
 
-    pub(crate) fn add_to_dictionary(&mut self, key: &str, p0: Node) {
+    pub(crate) fn add_to_dictionary(&mut self, key: &str, p0: Node) -> Result<(), &'static str> {
         match self {
             Node::Dictionary(dict) => {
                 let _ = dict.insert(key.to_string(), p0);
+                Ok(())
             }
-            _ => panic!("Can't push to a non-list node"),
+            _ => Err("Cannot add to non-dictionary node"),
         }
     }
 
@@ -153,6 +167,63 @@ impl Node {
             Node::None => "none",
         }
     }
+
+    // Validation helpers
+
+    /// Get a required field from a dictionary, returning an error if not found
+    pub fn get_required(&self, key: &str) -> Result<&Node, String> {
+        self.get(key)
+            .ok_or_else(|| format!("Missing required field: '{}'", key))
+    }
+
+    /// Get a required integer field from a dictionary
+    pub fn get_int_required(&self, key: &str) -> Result<i64, String> {
+        self.get_required(key)?
+            .as_integer()
+            .copied()
+            .ok_or_else(|| format!("Field '{}' must be an integer", key))
+    }
+
+    /// Get a required string field from a dictionary
+    pub fn get_string_required(&self, key: &str) -> Result<&str, String> {
+        self.get_required(key)?
+            .as_string()
+            .ok_or_else(|| format!("Field '{}' must be a string", key))
+    }
+
+    /// Get a required list field from a dictionary
+    pub fn get_list_required(&self, key: &str) -> Result<&Vec<Node>, String> {
+        self.get_required(key)?
+            .as_list()
+            .ok_or_else(|| format!("Field '{}' must be a list", key))
+    }
+
+    /// Get a required dictionary field from a dictionary
+    pub fn get_dict_required(&self, key: &str) -> Result<&HashMap<String, Node>, String> {
+        self.get_required(key)?
+            .as_dictionary()
+            .ok_or_else(|| format!("Field '{}' must be a dictionary", key))
+    }
+
+    /// Get an optional integer field, returning None if not found or not an integer
+    pub fn get_int_optional(&self, key: &str) -> Option<i64> {
+        self.get(key).and_then(|n| n.as_integer()).copied()
+    }
+
+    /// Get an optional string field, returning None if not found or not a string
+    pub fn get_string_optional(&self, key: &str) -> Option<&str> {
+        self.get(key).and_then(|n| n.as_string())
+    }
+
+    /// Get an optional list field, returning None if not found or not a list
+    pub fn get_list_optional(&self, key: &str) -> Option<&Vec<Node>> {
+        self.get(key).and_then(|n| n.as_list())
+    }
+
+    /// Get an optional dictionary field, returning None if not found or not a dictionary
+    pub fn get_dict_optional(&self, key: &str) -> Option<&HashMap<String, Node>> {
+        self.get(key).and_then(|n| n.as_dictionary())
+    }
 }
 
 /// Converts a vector of values into a List node
@@ -208,7 +279,7 @@ where
     V: Into<Node>,
 {
     fn from(value: [(K, V); N]) -> Self {
-        let mut map: HashMap<String, Node> = HashMap::with_capacity(N);
+        let mut map: HashMap<String, Node> = HashMap::new();
         for (k, v) in value.into_iter() {
             map.insert(k.into(), v.into());
         }
@@ -546,7 +617,7 @@ mod tests {
     #[test]
     fn test_add_to_list() {
         let mut node = Node::List(Vec::new());
-        node.add_to_list(Node::Integer(42));
+        let _ = node.add_to_list(Node::Integer(42));
         match node {
             Node::List(list) => assert_eq!(list[0], Node::Integer(42)),
             _ => assert_eq!(false, true),
@@ -554,27 +625,29 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Can't push to a non-list node")]
-    fn test_add_to_list_panic() {
+    fn test_add_to_list_error() {
         let mut node = Node::Integer(0);
-        node.add_to_list(Node::Integer(42));
+        let result = node.add_to_list(Node::Integer(42));
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Cannot add to non-list node");
     }
 
     #[test]
     fn test_add_to_dictionary() {
         let mut node = Node::Dictionary(HashMap::new());
-        node.add_to_dictionary("test", Node::Integer(42));
+        assert!(node.add_to_dictionary("test", Node::Integer(42)).is_ok());
         match node {
             Node::Dictionary(dict) => assert_eq!(dict["test"], Node::Integer(42)),
-            _ => assert_eq!(false, true),
+            _ => panic!("Expected dictionary"),
         }
     }
 
     #[test]
-    #[should_panic(expected = "Can't push to a non-list node")]
-    fn test_add_to_dictionary_panic() {
+    fn test_add_to_dictionary_error() {
         let mut node = Node::Integer(0);
-        node.add_to_dictionary("test", Node::Integer(42));
+        let result = node.add_to_dictionary("test", Node::Integer(42));
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Cannot add to non-dictionary node");
     }
 
     #[test]
@@ -760,6 +833,91 @@ mod tests {
     fn test_display_none() {
         let node = Node::None;
         assert_eq!(format!("{}", node), "null");
+    }
+
+    #[test]
+    fn test_get_required() {
+        let mut dict = HashMap::new();
+        dict.insert("key".to_string(), Node::Integer(42));
+        let node = Node::Dictionary(dict);
+
+        assert!(node.get_required("key").is_ok());
+        assert!(node.get_required("missing").is_err());
+    }
+
+    #[test]
+    fn test_get_int_required() {
+        let mut dict = HashMap::new();
+        dict.insert("age".to_string(), Node::Integer(25));
+        dict.insert("name".to_string(), Node::Str("John".to_string()));
+        let node = Node::Dictionary(dict);
+
+        assert_eq!(node.get_int_required("age").unwrap(), 25);
+        assert!(node.get_int_required("name").is_err());
+        assert!(node.get_int_required("missing").is_err());
+    }
+
+    #[test]
+    fn test_get_string_required() {
+        let mut dict = HashMap::new();
+        dict.insert("name".to_string(), Node::Str("John".to_string()));
+        dict.insert("age".to_string(), Node::Integer(25));
+        let node = Node::Dictionary(dict);
+
+        assert_eq!(node.get_string_required("name").unwrap(), "John");
+        assert!(node.get_string_required("age").is_err());
+        assert!(node.get_string_required("missing").is_err());
+    }
+
+    #[test]
+    fn test_get_list_required() {
+        let mut dict = HashMap::new();
+        dict.insert(
+            "items".to_string(),
+            Node::List(vec![Node::Integer(1), Node::Integer(2)]),
+        );
+        dict.insert("name".to_string(), Node::Str("test".to_string()));
+        let node = Node::Dictionary(dict);
+
+        assert_eq!(node.get_list_required("items").unwrap().len(), 2);
+        assert!(node.get_list_required("name").is_err());
+        assert!(node.get_list_required("missing").is_err());
+    }
+
+    #[test]
+    fn test_get_dict_required() {
+        let mut inner = HashMap::new();
+        inner.insert("x".to_string(), Node::Integer(1));
+
+        let mut dict = HashMap::new();
+        dict.insert("nested".to_string(), Node::Dictionary(inner));
+        dict.insert("value".to_string(), Node::Integer(42));
+        let node = Node::Dictionary(dict);
+
+        assert_eq!(node.get_dict_required("nested").unwrap().len(), 1);
+        assert!(node.get_dict_required("value").is_err());
+        assert!(node.get_dict_required("missing").is_err());
+    }
+
+    #[test]
+    fn test_get_optional_methods() {
+        let mut dict = HashMap::new();
+        dict.insert("age".to_string(), Node::Integer(25));
+        dict.insert("name".to_string(), Node::Str("John".to_string()));
+        dict.insert("items".to_string(), Node::List(vec![Node::Integer(1)]));
+        let node = Node::Dictionary(dict);
+
+        assert_eq!(node.get_int_optional("age"), Some(25));
+        assert_eq!(node.get_int_optional("name"), None);
+        assert_eq!(node.get_int_optional("missing"), None);
+
+        assert_eq!(node.get_string_optional("name"), Some("John"));
+        assert_eq!(node.get_string_optional("age"), None);
+        assert_eq!(node.get_string_optional("missing"), None);
+
+        assert_eq!(node.get_list_optional("items").map(|l| l.len()), Some(1));
+        assert_eq!(node.get_list_optional("age"), None);
+        assert_eq!(node.get_list_optional("missing"), None);
     }
 
     #[test]

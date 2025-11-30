@@ -1,0 +1,9 @@
+[package]
+name = "bencode_minimal"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bencode_lib = { path = "../../library", default-features = false, features = [
+    "std",
+] }

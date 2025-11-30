@@ -1,6 +1,6 @@
+use crate::io::traits::ISource;
 use std::fs::File as StdFile;
 use std::io::{Read, Seek, SeekFrom};
-use crate::io::traits::ISource;
 
 /// A file-based implementation for reading bencode data from disk.
 /// Provides functionality to read and traverse file content byte by byte.
@@ -26,7 +26,11 @@ impl File {
 
         Ok(Self {
             file,
-            current_byte: if has_byte { Some(current_byte[0]) } else { None },
+            current_byte: if has_byte {
+                Some(current_byte[0])
+            } else {
+                None
+            },
         })
     }
 }
@@ -71,7 +75,12 @@ mod tests {
     use std::io::Write;
 
     fn create_test_file(content: &str) -> String {
-        let path = format!("test_{}.txt", rand::random::<u32>());
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = format!("test_{}.txt", timestamp);
         let mut file = fs::File::create(&path).unwrap();
         file.write_all(content.as_bytes()).unwrap();
         path

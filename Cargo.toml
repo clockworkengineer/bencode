@@ -17,4 +17,12 @@ members = [
     "examples/bencode_list_ops",
     "examples/bencode_error_handling",
     "examples/bencode_format_conversions",
+    "examples/bencode_zerocopy",
+    "examples/bencode_memory_pool",
+    "examples/bencode_const_generics",
+    "examples/bencode_minimal",
+    "examples/bencode_full",
+    "examples/bencode_iterative",
+    "examples/bencode_lightweight_errors",
+    "examples/bencode_validation",
 ]
