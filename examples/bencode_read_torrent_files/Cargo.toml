@@ -1,8 +1,8 @@
 [package]
 name = "bencode_read_torrent_files"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2024"
 
 [dependencies]
-torrent_file= { path = "../torrent_file_lib/" }
-bencode_utility_lib={ path = "../bencode_utility_lib/" }
+torrent_file = { path = "../torrent_file_lib/" }
+bencode_utility_lib = { path = "../bencode_utility_lib/" }
