@@ -111,7 +111,8 @@ fn parse_string(source: &mut dyn ISource) -> Result<Node, String> {
 /// ```
 /// use bencode_lib::{parse_iterative, BufferSource};
 ///
-/// let data = b"d4:name4:John3:agei25ee";
+/// // Dictionary keys must be in lexicographical order for canonical bencode
+/// let data = b"d3:agei25e4:name4:Johnee";
 /// let mut source = BufferSource::new(data);
 /// let node = parse_iterative(&mut source).unwrap();
 /// ```
