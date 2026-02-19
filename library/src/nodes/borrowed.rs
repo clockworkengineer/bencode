@@ -142,6 +142,97 @@ impl<'a> fmt::Display for BorrowedNode<'a> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn edge_cases_empty_and_non_utf8() {
+        use crate::nodes::node::Node;
+        use crate::parser::borrowed::parse_borrowed;
+        // Empty list
+        let b = b"le";
+        let n = parse_borrowed(b).unwrap().to_node();
+        match n {
+            Node::List(l) => assert!(l.is_empty()),
+            _ => panic!("Expected Node::List"),
+        }
+
+        // Empty dict
+        let b = b"de";
+        let n = parse_borrowed(b).unwrap().to_node();
+        match n {
+            Node::Dictionary(m) => assert!(m.is_empty()),
+            _ => panic!("Expected Node::Dictionary"),
+        }
+
+        // Deeply nested
+        let mut b = b"i1e".to_vec();
+        for _ in 0..10 {
+            let mut tmp = Vec::with_capacity(2 + b.len());
+            tmp.extend_from_slice(b"l");
+            tmp.extend_from_slice(&b);
+            tmp.extend_from_slice(b"e");
+            b = tmp;
+        }
+        let n = parse_borrowed(&b).unwrap().to_node();
+        let mut cur = &n;
+        for _ in 0..10 {
+            match cur {
+                Node::List(l) => {
+                    assert_eq!(l.len(), 1);
+                    cur = &l[0];
+                }
+                _ => panic!("Expected Node::List"),
+            }
+        }
+        assert!(matches!(cur, Node::Integer(1)));
+
+        // Non-UTF8 bytes
+        let b = b"3:\xFF\x00\xFE";
+        let n = parse_borrowed(b).unwrap();
+        assert_eq!(n.as_bytes(), Some(&b"\xFF\x00\xFE"[..]));
+        let node = n.to_node();
+        match node {
+            Node::Str(ref s) => {
+                // Should not panic, but will contain replacement chars
+                assert!(s.contains("\u{FFFD}") || s.contains("\x00") || s.contains("\u{FFFD}"));
+            }
+            _ => panic!("Expected Node::Str"),
+        }
+    }
+    #[test]
+    fn round_trip_parse_borrowed_to_node() {
+        use crate::nodes::node::Node;
+        use crate::parser::borrowed::parse_borrowed;
+        // Integer
+        let b = b"i42e";
+        let n = parse_borrowed(b).unwrap().to_node();
+        assert!(matches!(n, Node::Integer(42)));
+
+        // String
+        let b = b"3:abc";
+        let n = parse_borrowed(b).unwrap().to_node();
+        assert!(matches!(n, Node::Str(ref s) if s == "abc"));
+
+        // List
+        let b = b"li1e3:xyze";
+        let n = parse_borrowed(b).unwrap().to_node();
+        match n {
+            Node::List(l) => {
+                assert_eq!(l.len(), 2);
+                assert!(matches!(&l[0], Node::Integer(1)));
+                assert!(matches!(&l[1], Node::Str(s) if s == "xyz"));
+            }
+            _ => panic!("Expected Node::List"),
+        }
+
+        // Dictionary
+        let b = b"d3:foo3:bare";
+        let n = parse_borrowed(b).unwrap().to_node();
+        match n {
+            Node::Dictionary(m) => {
+                assert_eq!(m["foo"], Node::Str("bar".to_string()));
+            }
+            _ => panic!("Expected Node::Dictionary"),
+        }
+    }
     use super::*;
 
     #[test]
@@ -177,5 +268,70 @@ mod tests {
 
         let bytes_node = BorrowedNode::Bytes(b"hello");
         assert_eq!(format!("{}", bytes_node), "\"hello\"");
+    }
+
+    #[test]
+    fn to_node_conversion_all_variants() {
+        use crate::nodes::node::Node;
+        // Integer
+        let b_int = BorrowedNode::Integer(123);
+        let n = b_int.to_node();
+        assert!(matches!(n, Node::Integer(123)));
+
+        // Bytes/Str
+        let b_bytes = BorrowedNode::Bytes(b"abc");
+        let n = b_bytes.to_node();
+        assert!(matches!(n, Node::Str(ref s) if s == "abc"));
+
+        // List
+        let b_list = BorrowedNode::List(vec![BorrowedNode::Integer(1), BorrowedNode::Bytes(b"x")]);
+        let n = b_list.to_node();
+        match n {
+            Node::List(l) => {
+                assert_eq!(l.len(), 2);
+                assert!(matches!(&l[0], Node::Integer(1)));
+                assert!(matches!(&l[1], Node::Str(s) if s == "x"));
+            }
+            _ => panic!("Expected Node::List"),
+        }
+
+        // Dictionary
+        let mut dict = std::collections::HashMap::new();
+        dict.insert(b"foo".as_ref(), BorrowedNode::Integer(7));
+        dict.insert(b"bar".as_ref(), BorrowedNode::Bytes(b"baz"));
+        let b_dict = BorrowedNode::Dictionary(dict);
+        let n = b_dict.to_node();
+        match n {
+            Node::Dictionary(m) => {
+                assert_eq!(m["foo"], Node::Integer(7));
+                assert_eq!(m["bar"], Node::Str("baz".to_string()));
+            }
+            _ => panic!("Expected Node::Dictionary"),
+        }
+    }
+
+    #[test]
+    fn to_node_nested_structures() {
+        use crate::nodes::node::Node;
+        let mut inner_dict = std::collections::HashMap::new();
+        inner_dict.insert(b"k".as_ref(), BorrowedNode::Bytes(b"v"));
+        let b = BorrowedNode::List(vec![
+            BorrowedNode::Dictionary(inner_dict),
+            BorrowedNode::Integer(5),
+        ]);
+        let n = b.to_node();
+        match n {
+            Node::List(l) => {
+                assert_eq!(l.len(), 2);
+                match &l[0] {
+                    Node::Dictionary(m) => {
+                        assert_eq!(m["k"], Node::Str("v".to_string()));
+                    }
+                    _ => panic!("Expected Node::Dictionary"),
+                }
+                assert!(matches!(&l[1], Node::Integer(5)));
+            }
+            _ => panic!("Expected Node::List"),
+        }
     }
 }

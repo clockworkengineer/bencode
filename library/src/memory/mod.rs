@@ -238,6 +238,37 @@ impl<const N: usize> Default for StackBuffer<N> {
 
 #[cfg(test)]
 mod tests {
+        #[test]
+        fn memory_tracker_overflow_and_limit() {
+            let tracker = MemoryTracker::with_limit(10);
+            assert!(tracker.allocate(5).is_ok());
+            assert!(tracker.allocate(6).is_err());
+            tracker.deallocate(5);
+            assert_eq!(tracker.current(), 0);
+            tracker.reset();
+            assert_eq!(tracker.current(), 0);
+        }
+
+        #[test]
+        fn arena_allocation_errors() {
+            let arena = Arena::with_capacity(8);
+            assert!(arena.alloc_bytes(4).is_some());
+            assert!(arena.alloc_bytes(5).is_none()); // Not enough space
+            let arena = Arena::with_capacity(0);
+            assert!(arena.alloc_bytes(1).is_none());
+        }
+
+        #[test]
+        fn stack_buffer_error_cases() {
+            let mut buffer = StackBuffer::<2>::new();
+            assert!(buffer.push(b'a'));
+            assert!(buffer.push(b'b'));
+            assert!(!buffer.push(b'c'));
+            buffer.clear();
+            assert!(buffer.is_empty());
+            assert!(buffer.extend_from_slice(b"ab"));
+            assert!(!buffer.extend_from_slice(b"cd"));
+        }
     use super::*;
 
     #[test]
