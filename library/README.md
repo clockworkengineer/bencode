@@ -2,6 +2,33 @@
 
 A Rust library for parsing, constructing, and converting Bencode data. Designed for embedded systems, resource-constrained environments, and general-purpose use. Supports round-tripping Bencode and conversion to JSON, YAML, XML, and TOML.
 
+
+
+## Release Builds & LTO for Optimal Size
+
+For the smallest and fastest binaries, always build with release optimizations and enable Link Time Optimization (LTO):
+
+```toml
+[profile.release]
+lto = true
+```
+
+Build with:
+```sh
+cargo build --release
+```
+
+See `Cargo.toml` for more details.
+
+## Stack-Allocated Buffers & Compile-Time Memory Safety
+
+For embedded or size-sensitive applications, use `FixedSizeBuffer<N>` to allocate buffers on the stack with compile-time size checks. This ensures:
+- Predictable, bounded memory usage (no heap allocation)
+- Compile-time safety for buffer sizes
+- Zero runtime overhead for size checks
+
+See `examples/bencode_const_generics` for practical usage and patterns.
+
 ## Features
 
 - Parse Bencode into a typed tree (`Node`)

@@ -1,6 +1,7 @@
-//! Borrowed/zero-copy node implementation for embedded systems.
-//! This module provides a Node variant that holds references to the input buffer
-//! instead of allocating and copying data, reducing memory usage.
+use crate::nodes::node::Node;
+/// Borrowed/zero-copy node implementation for embedded systems.
+/// This module provides a Node variant that holds references to the input buffer
+/// instead of allocating and copying data, reducing memory usage.
 
 #[cfg(not(feature = "std"))]
 use alloc::collections::BTreeMap as HashMap;
@@ -30,6 +31,24 @@ pub enum BorrowedNode<'a> {
 }
 
 impl<'a> BorrowedNode<'a> {
+    /// Recursively convert a BorrowedNode to an owned Node
+    pub fn to_node(&self) -> Node {
+        match self {
+            BorrowedNode::Integer(i) => Node::Integer(*i),
+            BorrowedNode::Bytes(b) => Node::Str(String::from_utf8_lossy(b).into_owned()),
+            BorrowedNode::List(list) => {
+                Node::List(list.iter().map(|item| item.to_node()).collect())
+            }
+            BorrowedNode::Dictionary(dict) => Node::Dictionary(
+                dict.iter()
+                    .map(|(k, v)| {
+                        let key = String::from_utf8_lossy(k).into_owned();
+                        (key, v.to_node())
+                    })
+                    .collect(),
+            ),
+        }
+    }
     /// Returns true if the node is an Integer variant
     pub fn is_integer(&self) -> bool {
         matches!(self, BorrowedNode::Integer(_))

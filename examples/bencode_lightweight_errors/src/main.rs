@@ -1,5 +1,8 @@
 //! Lightweight error handling example for embedded systems
 //!
+//! **Best Practice:** Use `BencodeError` for error handling in embedded or size-sensitive applications.
+//! This error type is stack-only, requires no heap allocation, and is ideal for no_std and deterministic environments.
+//!
 //! Demonstrates the use of BencodeError enum which doesn't require heap allocation,
 //! making it ideal for no_std and embedded environments with limited memory.
 
