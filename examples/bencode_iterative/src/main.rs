@@ -1,5 +1,8 @@
 //! Iterative (stack-based) parser example
 //!
+//! **Best Practice:** Use `parse_iterative` and related functions for deeply nested bencode data or in embedded/stack-limited environments.
+//! This avoids stack overflows by using an explicit heap stack, making parsing robust and predictable for any nesting depth.
+//!
 //! Demonstrates the iterative parser that avoids recursion, making it suitable
 //! for embedded systems with limited stack space or handling deeply nested structures.
 //!

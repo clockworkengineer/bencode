@@ -3,8 +3,8 @@
 //! and BufferSource/BufferDestination for more control.
 
 use bencode_lib::{
-    make_node, parse, parse_bytes, parse_str, stringify, stringify_to_bytes, stringify_to_string,
-    BufferDestination, BufferSource, Node,
+    make_node, parse_borrowed, validate_bencode, stringify, stringify_to_bytes, stringify_to_string,
+    BufferDestination, Node,
 };
 use std::collections::HashMap;
 
@@ -26,20 +26,19 @@ fn main() {
 
 /// Demonstrates the convenient parse_bytes, parse_str, stringify_to_bytes, and stringify_to_string functions
 fn demonstrate_convenience_functions() {
-    println!("--- Convenience Functions ---");
+    println!("--- Convenience Functions (Zero-Copy Preferred) ---");
 
-    // Parse from byte slice
+    // Parse from byte slice (zero-copy)
     let bencode_bytes = b"i42e";
-    match parse_bytes(bencode_bytes) {
-        Ok(node) => println!("Parsed from bytes: {}", node),
+    match parse_borrowed(bencode_bytes) {
+        Ok(node) => println!("Parsed from bytes (zero-copy): {}", node),
         Err(e) => eprintln!("Parse error: {}", e),
     }
 
-    // Parse from string slice
-    let bencode_str = "4:test";
-    match parse_str(bencode_str) {
-        Ok(node) => println!("Parsed from string: {}", node),
-        Err(e) => eprintln!("Parse error: {}", e),
+    // Validate bencode without parsing
+    match validate_bencode(bencode_bytes) {
+        Ok(_) => println!("Validated bencode (no allocation)"),
+        Err(e) => eprintln!("Validation error: {}", e),
     }
 
     // Create a node and convert to string
@@ -60,25 +59,26 @@ fn demonstrate_convenience_functions() {
 
 /// Demonstrates using BufferSource and BufferDestination for more control
 fn demonstrate_buffer_types() {
-    println!("--- Buffer Types ---");
+    println!("--- Buffer Types (Zero-Copy Preferred) ---");
 
     // Create bencode data in memory
     let bencode_data = b"d4:name4:John3:agei30e7:hobbieslll7:reading6:codingeee";
 
-    // Parse using BufferSource
-    let mut source = BufferSource::new(bencode_data);
-    match parse(&mut source) {
+    // Parse using zero-copy
+    match parse_borrowed(bencode_data) {
         Ok(node) => {
-            println!("Parsed dictionary:");
+            println!("Parsed dictionary (zero-copy):");
             if let Some(dict) = node.as_dictionary() {
                 for (key, value) in dict {
-                    println!("  {}: {}", key, value);
+                    println!("  {:?}: {:?}", key, value);
                 }
             }
 
             // Stringify back using BufferDestination
             let mut destination = BufferDestination::new();
-            match stringify(&node, &mut destination) {
+            // Convert BorrowedNode to Node for stringification
+            let node_owned: Node = node.to_node();
+            match stringify(&node_owned, &mut destination) {
                 Ok(_) => {
                     let output = &destination.buffer;
                     println!("Stringified back: {:?}", output);
@@ -120,10 +120,12 @@ fn demonstrate_round_trips() {
             println!("Bencode string: {}", String::from_utf8_lossy(&bytes));
 
             // Parse it back
-            match parse_bytes(&bytes) {
+            match parse_borrowed(&bytes) {
                 Ok(parsed) => {
-                    println!("Parsed back: {}", parsed);
-                    println!("Matches original: {}", original == parsed);
+                    // Convert BorrowedNode to Node for comparison
+                    let parsed_owned: Node = parsed.to_node();
+                    println!("Parsed back: {}", parsed_owned);
+                    println!("Matches original: {}", original == parsed_owned);
                 }
                 Err(e) => eprintln!("Parse error: {}", e),
             }
@@ -150,12 +152,14 @@ fn demonstrate_byte_operations() {
 
     for (description, bytes) in examples {
         print!("{}: ", description);
-        match parse_bytes(bytes) {
+        match parse_borrowed(bytes) {
             Ok(node) => {
-                println!("{} (type: {})", node, node.type_name());
+                // Convert BorrowedNode to Node for display and stringification
+                let node_owned: Node = node.to_node();
+                println!("{:?}", node_owned);
 
                 // Verify we can convert back
-                if let Ok(output) = stringify_to_bytes(&node) {
+                if let Ok(output) = stringify_to_bytes(&node_owned) {
                     if output == bytes {
                         println!("  ✓ Round-trip successful");
                     } else {

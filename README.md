@@ -270,7 +270,18 @@ to_json(&node, &mut dest);
 println!("{}", String::from_utf8_lossy(&dest.buffer));
 ```
 
-## Tips
+
+## Size & Performance Best Practices
+
+- **Disable unused features**: In your Cargo.toml, use `default-features = false` and only enable what you need for minimal binary size.
+- **Enable LTO and release builds**: Add `[profile.release] lto = true` and always build with `--release`.
+- **Use zero-copy parsing**: Prefer `parse_borrowed()` for memory efficiency and speed.
+- **Stack-allocated buffers**: Use `FixedSizeBuffer<N>` for predictable, compile-time checked stack allocation.
+- **Iterative parsing**: Use `parse_iterative` for deeply nested data to avoid stack overflows.
+- **Lightweight error handling**: Use `BencodeError` for no-heap, deterministic error handling in embedded/size-sensitive builds.
+- **Memory pools/arenas**: Use `Arena` and `MemoryTracker` for predictable, batch allocation and memory tracking.
+
+See the `REFRACTOR_PLAN.md` and the library README for more details and rationale.
 
 - Use `make_node()` for convenient node creation
 - Always check types before accessing values
