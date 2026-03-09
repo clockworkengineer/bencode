@@ -1,5 +1,5 @@
 //! Integration tests for the bencode stringify functionality.
-//! These tests validate the stringify behavior from an external perspective,
+//! These tests validate the bencode (binary encoding) stringify behaviour,
 //! testing the public API against various node structures.
 
 #[cfg(test)]

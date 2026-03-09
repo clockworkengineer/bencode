@@ -1,4 +1,4 @@
-//! Integration tests for new features added to the bencode library
+//! Integration tests for the Node API and convenience functions
 
 #[cfg(test)]
 mod tests {

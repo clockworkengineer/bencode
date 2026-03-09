@@ -1,19 +1,18 @@
 // Integration tests for the bencode library
 
+mod node_api;
 
-mod new_features;
+pub mod parse_dict;
 
-pub mod parser_dictionaries;
+mod parse_errors;
 
-mod parser_errors;
+mod parse_int;
 
-mod parser_integers;
+mod parse_list;
 
-mod parser_lists;
+mod parse_str;
 
-mod parser_strings;
-
-mod stringify;
+mod stringify_bencode;
 
 mod stringify_json;
 
