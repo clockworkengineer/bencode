@@ -621,9 +621,14 @@ mod tests {
 
     #[test]
     fn parse_bytes_and_str_iterative_produce_same_result() {
+        use crate::stringify::default::stringify_to_string;
         let input = "d3:agei25e4:name4:Johne";
-        let from_bytes = parse_bytes_iterative(input.as_bytes());
-        let from_str = parse_str_iterative(input);
-        assert_eq!(format!("{:?}", from_bytes), format!("{:?}", from_str));
+        let from_bytes = parse_bytes_iterative(input.as_bytes()).unwrap();
+        let from_str = parse_str_iterative(input).unwrap();
+        // Re-encode to bencode (which sorts dict keys) for a deterministic comparison
+        assert_eq!(
+            stringify_to_string(&from_bytes).unwrap(),
+            stringify_to_string(&from_str).unwrap()
+        );
     }
 }

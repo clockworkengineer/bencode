@@ -28,7 +28,7 @@ bencode_lib = { path = "library" }
 Or use the published version:
 ```toml
 [dependencies]
-bencode_lib = "0.1.7"
+bencode_lib = "0.2.0"
 ```
 
 ## Quick examples

@@ -50,7 +50,7 @@ Add to your `Cargo.toml`:
 ```
 toml
 [dependencies]
-bencode_lib = "0.1.7"
+bencode_lib = "0.2.0"
 ```
 - Or as a workspace/path dependency:
 ```
