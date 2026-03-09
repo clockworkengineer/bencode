@@ -3,7 +3,7 @@
 
 mod new_features;
 
-mod parser_dictionaries;
+pub mod parser_dictionaries;
 
 mod parser_errors;
 

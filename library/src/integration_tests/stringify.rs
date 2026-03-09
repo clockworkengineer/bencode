@@ -189,5 +189,213 @@ mod tests {
         stringify(&level1, &mut destination).unwrap();
         assert_eq!(destination.to_string(), "d2:l2ld2:l4l7:deepesteeee");
     }
-    
+
+    // --- Integer encodings ---
+
+    #[test]
+    fn test_stringify_i64_min() {
+        let mut destination = BufferDestination::new();
+        stringify(&Node::Integer(i64::MIN), &mut destination).unwrap();
+        assert_eq!(
+            destination.to_string(),
+            format!("i{}e", i64::MIN)
+        );
+    }
+
+    #[test]
+    fn test_stringify_integer_one() {
+        let mut destination = BufferDestination::new();
+        stringify(&Node::Integer(1), &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "i1e");
+    }
+
+    #[test]
+    fn test_stringify_integer_minus_one() {
+        let mut destination = BufferDestination::new();
+        stringify(&Node::Integer(-1), &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "i-1e");
+    }
+
+    // --- String encodings ---
+
+    #[test]
+    fn test_stringify_single_char_string() {
+        let mut destination = BufferDestination::new();
+        stringify(&Node::Str("x".to_string()), &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "1:x");
+    }
+
+    #[test]
+    fn test_stringify_string_with_digits() {
+        let mut destination = BufferDestination::new();
+        stringify(&Node::Str("12345".to_string()), &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "5:12345");
+    }
+
+    #[test]
+    fn test_stringify_string_containing_colon() {
+        // Colon in content is valid bencode string data
+        let mut destination = BufferDestination::new();
+        stringify(&Node::Str("a:b".to_string()), &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "3:a:b");
+    }
+
+    // --- None handling ---
+
+    #[test]
+    fn test_stringify_standalone_none_emits_nothing() {
+        let mut destination = BufferDestination::new();
+        stringify(&Node::None, &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "");
+    }
+
+    #[test]
+    fn test_stringify_list_all_none_produces_empty_list_body() {
+        let mut destination = BufferDestination::new();
+        stringify(
+            &Node::List(vec![Node::None, Node::None]),
+            &mut destination,
+        )
+        .unwrap();
+        assert_eq!(destination.to_string(), "le");
+    }
+
+    // --- Empty collections ---
+
+    #[test]
+    fn test_stringify_empty_list() {
+        let mut destination = BufferDestination::new();
+        stringify(&Node::List(vec![]), &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "le");
+    }
+
+    #[test]
+    fn test_stringify_empty_dictionary() {
+        let mut destination = BufferDestination::new();
+        stringify(&Node::Dictionary(HashMap::new()), &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "de");
+    }
+
+    // --- Dictionary key ordering ---
+
+    #[test]
+    fn test_stringify_dict_keys_sorted_lexicographically() {
+        // "ab" < "abc" lexicographically
+        let mut destination = BufferDestination::new();
+        let mut dict = HashMap::new();
+        dict.insert("abc".to_string(), Node::Integer(2));
+        dict.insert("ab".to_string(), Node::Integer(1));
+        stringify(&Node::Dictionary(dict), &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "d2:abi1e3:abci2ee");
+    }
+
+    #[test]
+    fn test_stringify_dict_single_entry() {
+        let mut destination = BufferDestination::new();
+        let mut dict = HashMap::new();
+        dict.insert("k".to_string(), Node::Integer(99));
+        stringify(&Node::Dictionary(dict), &mut destination).unwrap();
+        assert_eq!(destination.to_string(), "d1:ki99ee");
+    }
+
+    // --- Convenience API ---
+
+    #[test]
+    fn test_stringify_to_string_integer() {
+        use crate::stringify_to_string;
+        assert_eq!(stringify_to_string(&Node::Integer(42)).unwrap(), "i42e");
+    }
+
+    #[test]
+    fn test_stringify_to_string_string_node() {
+        use crate::stringify_to_string;
+        assert_eq!(
+            stringify_to_string(&Node::Str("hi".to_string())).unwrap(),
+            "2:hi"
+        );
+    }
+
+    #[test]
+    fn test_stringify_to_string_empty_list() {
+        use crate::stringify_to_string;
+        assert_eq!(stringify_to_string(&Node::List(vec![])).unwrap(), "le");
+    }
+
+    #[test]
+    fn test_stringify_to_string_empty_dict() {
+        use crate::stringify_to_string;
+        assert_eq!(
+            stringify_to_string(&Node::Dictionary(HashMap::new())).unwrap(),
+            "de"
+        );
+    }
+
+    #[test]
+    fn test_stringify_to_bytes_integer() {
+        use crate::stringify_to_bytes;
+        assert_eq!(
+            stringify_to_bytes(&Node::Integer(0)).unwrap(),
+            b"i0e".to_vec()
+        );
+    }
+
+    #[test]
+    fn test_stringify_to_bytes_string() {
+        use crate::stringify_to_bytes;
+        assert_eq!(
+            stringify_to_bytes(&Node::Str("abc".to_string())).unwrap(),
+            b"3:abc".to_vec()
+        );
+    }
+
+    // --- Round-trips with parse_bytes ---
+
+    #[test]
+    fn test_round_trip_integer() {
+        use crate::{parse_bytes, stringify_to_bytes};
+        let node = Node::Integer(-999);
+        assert_eq!(parse_bytes(&stringify_to_bytes(&node).unwrap()).unwrap(), node);
+    }
+
+    #[test]
+    fn test_round_trip_string() {
+        use crate::{parse_bytes, stringify_to_bytes};
+        let node = Node::Str("bencode".to_string());
+        assert_eq!(parse_bytes(&stringify_to_bytes(&node).unwrap()).unwrap(), node);
+    }
+
+    #[test]
+    fn test_round_trip_list() {
+        use crate::{parse_bytes, stringify_to_bytes};
+        let node = Node::List(vec![
+            Node::Integer(1),
+            Node::Str("two".to_string()),
+            Node::Integer(3),
+        ]);
+        assert_eq!(parse_bytes(&stringify_to_bytes(&node).unwrap()).unwrap(), node);
+    }
+
+    #[test]
+    fn test_round_trip_dict() {
+        use crate::{parse_bytes, stringify_to_bytes};
+        let mut dict = HashMap::new();
+        dict.insert("aaa".to_string(), Node::Integer(1));
+        dict.insert("bbb".to_string(), Node::Str("val".to_string()));
+        let node = Node::Dictionary(dict);
+        let encoded = stringify_to_bytes(&node).unwrap();
+        let reparsed = parse_bytes(&encoded).unwrap();
+        assert_eq!(node, reparsed);
+    }
+
+    #[test]
+    fn test_round_trip_nested() {
+        use crate::{parse_bytes, stringify_to_bytes};
+        let mut inner = HashMap::new();
+        inner.insert("x".to_string(), Node::Integer(42));
+        let node = Node::List(vec![
+            Node::Dictionary(inner),
+            Node::List(vec![Node::Integer(1), Node::Integer(2)]),
+        ]);
+        assert_eq!(parse_bytes(&stringify_to_bytes(&node).unwrap()).unwrap(), node);
+    }
 }
