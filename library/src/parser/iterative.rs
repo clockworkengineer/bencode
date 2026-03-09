@@ -371,4 +371,259 @@ mod tests {
         let mut source = BufferSource::new(b"d3:bbci32e3:abci42ee");
         assert!(matches!(parse_iterative(&mut source), Err(s) if s == ERR_DICT_KEYS_ORDER));
     }
+
+    // --- parse_bytes_iterative / parse_str_iterative wrappers ---
+
+    #[test]
+    fn parse_bytes_iterative_integer() {
+        assert!(matches!(
+            parse_bytes_iterative(b"i99e"),
+            Ok(Node::Integer(99))
+        ));
+    }
+
+    #[test]
+    fn parse_bytes_iterative_string() {
+        assert!(matches!(parse_bytes_iterative(b"5:hello"), Ok(Node::Str(s)) if s == "hello"));
+    }
+
+    #[test]
+    fn parse_bytes_iterative_list() {
+        let result = parse_bytes_iterative(b"li1ei2ee");
+        assert!(matches!(result, Ok(Node::List(_))));
+    }
+
+    #[test]
+    fn parse_bytes_iterative_dict() {
+        let result = parse_bytes_iterative(b"d3:keyi7ee");
+        assert!(matches!(result, Ok(Dictionary(_))));
+    }
+
+    #[test]
+    fn parse_str_iterative_integer() {
+        assert!(matches!(parse_str_iterative("i42e"), Ok(Node::Integer(42))));
+    }
+
+    #[test]
+    fn parse_str_iterative_string() {
+        assert!(matches!(parse_str_iterative("4:rust"), Ok(Node::Str(s)) if s == "rust"));
+    }
+
+    #[test]
+    fn parse_str_iterative_invalid_returns_error() {
+        assert!(parse_str_iterative("xyz").is_err());
+    }
+
+    // --- Integer edge cases ---
+
+    #[test]
+    fn parse_integer_zero() {
+        let mut source = BufferSource::new(b"i0e");
+        assert!(matches!(parse_iterative(&mut source), Ok(Node::Integer(0))));
+    }
+
+    #[test]
+    fn parse_integer_negative() {
+        let mut source = BufferSource::new(b"i-7e");
+        assert!(matches!(
+            parse_iterative(&mut source),
+            Ok(Node::Integer(-7))
+        ));
+    }
+
+    #[test]
+    fn parse_integer_max_i64() {
+        let encoded = format!("i{}e", i64::MAX);
+        assert!(matches!(
+            parse_bytes_iterative(encoded.as_bytes()),
+            Ok(Node::Integer(v)) if v == i64::MAX
+        ));
+    }
+
+    #[test]
+    fn parse_integer_min_i64() {
+        let encoded = format!("i{}e", i64::MIN);
+        assert!(matches!(
+            parse_bytes_iterative(encoded.as_bytes()),
+            Ok(Node::Integer(v)) if v == i64::MIN
+        ));
+    }
+
+    #[test]
+    fn parse_integer_invalid_chars_returns_error() {
+        let mut source = BufferSource::new(b"i12xe");
+        assert!(matches!(parse_iterative(&mut source), Err(s) if s == ERR_INVALID_INTEGER));
+    }
+
+    #[test]
+    fn parse_empty_input_returns_error() {
+        let mut source = BufferSource::new(b"");
+        assert!(matches!(parse_iterative(&mut source), Err(s) if s == ERR_EMPTY_INPUT));
+    }
+
+    #[test]
+    fn parse_unknown_start_byte_returns_error() {
+        let mut source = BufferSource::new(b"z5:hello");
+        assert!(parse_iterative(&mut source).is_err());
+    }
+
+    // --- String edge cases ---
+
+    #[test]
+    fn parse_empty_string() {
+        let mut source = BufferSource::new(b"0:");
+        assert!(matches!(parse_iterative(&mut source), Ok(Node::Str(s)) if s.is_empty()));
+    }
+
+    #[test]
+    fn parse_single_char_string() {
+        let mut source = BufferSource::new(b"1:x");
+        assert!(matches!(parse_iterative(&mut source), Ok(Node::Str(s)) if s == "x"));
+    }
+
+    #[test]
+    fn parse_string_length_mismatch_returns_error() {
+        // claims 5 bytes but only provides 3
+        let mut source = BufferSource::new(b"5:abc");
+        assert!(parse_iterative(&mut source).is_err());
+    }
+
+    #[test]
+    fn parse_colon_alone_returns_error() {
+        let mut source = BufferSource::new(b":hello");
+        assert!(parse_iterative(&mut source).is_err());
+    }
+
+    // --- List edge cases ---
+
+    #[test]
+    fn parse_list_single_integer() {
+        let mut source = BufferSource::new(b"li77ee");
+        match parse_iterative(&mut source) {
+            Ok(Node::List(list)) => {
+                assert_eq!(list.len(), 1);
+                assert!(matches!(&list[0], Node::Integer(77)));
+            }
+            _ => panic!("Expected list with one integer"),
+        }
+    }
+
+    #[test]
+    fn parse_list_of_strings() {
+        let mut source = BufferSource::new(b"l3:foo3:bare");
+        match parse_iterative(&mut source) {
+            Ok(Node::List(list)) => {
+                assert_eq!(list.len(), 2);
+                assert!(matches!(&list[0], Node::Str(s) if s == "foo"));
+                assert!(matches!(&list[1], Node::Str(s) if s == "bar"));
+            }
+            _ => panic!("Expected list of strings"),
+        }
+    }
+
+    #[test]
+    fn parse_list_mixed_types() {
+        let mut source = BufferSource::new(b"li1e3:twoi3ee");
+        match parse_iterative(&mut source) {
+            Ok(Node::List(list)) => {
+                assert_eq!(list.len(), 3);
+                assert!(matches!(&list[0], Node::Integer(1)));
+                assert!(matches!(&list[1], Node::Str(s) if s == "two"));
+                assert!(matches!(&list[2], Node::Integer(3)));
+            }
+            _ => panic!("Expected mixed list"),
+        }
+    }
+
+    #[test]
+    fn parse_unterminated_list_returns_error() {
+        let mut source = BufferSource::new(b"li1ei2e");
+        assert!(matches!(parse_iterative(&mut source), Err(s) if s == ERR_UNTERMINATED_LIST));
+    }
+
+    #[test]
+    fn parse_list_containing_empty_list() {
+        // [[], []]
+        let mut source = BufferSource::new(b"llelee");
+        match parse_iterative(&mut source) {
+            Ok(Node::List(list)) => {
+                assert_eq!(list.len(), 2);
+                assert!(matches!(&list[0], Node::List(inner) if inner.is_empty()));
+                assert!(matches!(&list[1], Node::List(inner) if inner.is_empty()));
+            }
+            _ => panic!("Expected list of empty lists"),
+        }
+    }
+
+    // --- Dictionary edge cases ---
+
+    #[test]
+    fn parse_dictionary_string_value() {
+        let mut source = BufferSource::new(b"d3:key5:valuee");
+        match parse_iterative(&mut source) {
+            Ok(Dictionary(dict)) => {
+                assert_eq!(dict.len(), 1);
+                assert!(matches!(dict.get("key"), Some(Node::Str(s)) if s == "value"));
+            }
+            _ => panic!("Expected dictionary"),
+        }
+    }
+
+    #[test]
+    fn parse_dictionary_list_value() {
+        let mut source = BufferSource::new(b"d4:datali1ei2eee");
+        match parse_iterative(&mut source) {
+            Ok(Dictionary(dict)) => {
+                assert!(matches!(dict.get("data"), Some(Node::List(_))));
+            }
+            _ => panic!("Expected dictionary with list value"),
+        }
+    }
+
+    #[test]
+    fn parse_dictionary_nested_dict() {
+        let mut source = BufferSource::new(b"d5:innerd3:keyi1eee");
+        match parse_iterative(&mut source) {
+            Ok(Dictionary(outer)) => {
+                assert!(matches!(outer.get("inner"), Some(Dictionary(_))));
+            }
+            _ => panic!("Expected nested dictionary"),
+        }
+    }
+
+    #[test]
+    fn parse_dictionary_multiple_sorted_entries() {
+        let mut source = BufferSource::new(b"d1:ai1e1:bi2e1:ci3ee");
+        match parse_iterative(&mut source) {
+            Ok(Dictionary(dict)) => {
+                assert_eq!(dict.len(), 3);
+                assert!(matches!(dict.get("a"), Some(Node::Integer(1))));
+                assert!(matches!(dict.get("b"), Some(Node::Integer(2))));
+                assert!(matches!(dict.get("c"), Some(Node::Integer(3))));
+            }
+            _ => panic!("Expected dictionary with three entries"),
+        }
+    }
+
+    #[test]
+    fn parse_dictionary_integer_key_fails() {
+        let mut source = BufferSource::new(b"di1e3:vale");
+        assert!(matches!(parse_iterative(&mut source), Err(s) if s == ERR_DICT_KEY_MUST_BE_STRING));
+    }
+
+    #[test]
+    fn parse_unterminated_dict_returns_error() {
+        let mut source = BufferSource::new(b"d3:keyi1e");
+        assert!(matches!(parse_iterative(&mut source), Err(s) if s == ERR_UNTERMINATED_DICTIONARY));
+    }
+
+    // --- Consistency with default parser ---
+
+    #[test]
+    fn parse_bytes_and_str_iterative_produce_same_result() {
+        let input = "d3:agei25e4:name4:Johne";
+        let from_bytes = parse_bytes_iterative(input.as_bytes());
+        let from_str = parse_str_iterative(input);
+        assert_eq!(format!("{:?}", from_bytes), format!("{:?}", from_str));
+    }
 }

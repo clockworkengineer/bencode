@@ -930,4 +930,326 @@ mod tests {
 
         assert_eq!(format!("{}", node), "[1, {\"x\": 10}]");
     }
+
+    // ── equality / clone ──────────────────────────────────────────────────────
+
+    #[test]
+    fn node_equality_integers() {
+        assert_eq!(Node::Integer(0), Node::Integer(0));
+        assert_ne!(Node::Integer(1), Node::Integer(2));
+    }
+
+    #[test]
+    fn node_equality_strings() {
+        assert_eq!(Node::Str("a".into()), Node::Str("a".into()));
+        assert_ne!(Node::Str("a".into()), Node::Str("b".into()));
+    }
+
+    #[test]
+    fn node_equality_none() {
+        assert_eq!(Node::None, Node::None);
+        assert_ne!(Node::None, Node::Integer(0));
+    }
+
+    #[test]
+    fn node_clone_preserves_value() {
+        let nodes = vec![
+            Node::Integer(99),
+            Node::Str("hello".into()),
+            Node::List(vec![Node::Integer(1)]),
+            Node::None,
+        ];
+        for n in nodes {
+            assert_eq!(n.clone(), n);
+        }
+    }
+
+    // ── is_* exhaustive ───────────────────────────────────────────────────────
+
+    #[test]
+    fn is_integer_only_true_for_integer() {
+        assert!(Node::Integer(0).is_integer());
+        assert!(!Node::Str("".into()).is_integer());
+        assert!(!Node::List(vec![]).is_integer());
+        assert!(!Node::Dictionary(HashMap::new()).is_integer());
+        assert!(!Node::None.is_integer());
+    }
+
+    #[test]
+    fn is_string_only_true_for_str() {
+        assert!(Node::Str("x".into()).is_string());
+        assert!(!Node::Integer(0).is_string());
+        assert!(!Node::List(vec![]).is_string());
+        assert!(!Node::Dictionary(HashMap::new()).is_string());
+        assert!(!Node::None.is_string());
+    }
+
+    #[test]
+    fn is_none_only_true_for_none() {
+        assert!(Node::None.is_none());
+        assert!(!Node::Integer(0).is_none());
+        assert!(!Node::Str("".into()).is_none());
+        assert!(!Node::List(vec![]).is_none());
+        assert!(!Node::Dictionary(HashMap::new()).is_none());
+    }
+
+    // ── as_integer / as_string boundary values ────────────────────────────────
+
+    #[test]
+    fn as_integer_boundary_values() {
+        assert_eq!(Node::Integer(0).as_integer(), Some(&0));
+        assert_eq!(Node::Integer(i64::MAX).as_integer(), Some(&i64::MAX));
+        assert_eq!(Node::Integer(i64::MIN).as_integer(), Some(&i64::MIN));
+        assert_eq!(Node::Integer(-1).as_integer(), Some(&-1));
+    }
+
+    #[test]
+    fn as_string_empty_string() {
+        assert_eq!(Node::Str("".into()).as_string(), Some(""));
+    }
+
+    // ── as_list_mut / as_dictionary_mut ───────────────────────────────────────
+
+    #[test]
+    fn as_list_mut_returns_none_for_non_list() {
+        assert!(Node::Integer(0).as_list_mut().is_none());
+        assert!(Node::Str("".into()).as_list_mut().is_none());
+        assert!(Node::Dictionary(HashMap::new()).as_list_mut().is_none());
+        assert!(Node::None.as_list_mut().is_none());
+    }
+
+    #[test]
+    fn as_dictionary_mut_returns_none_for_non_dict() {
+        assert!(Node::Integer(0).as_dictionary_mut().is_none());
+        assert!(Node::Str("".into()).as_dictionary_mut().is_none());
+        assert!(Node::List(vec![]).as_dictionary_mut().is_none());
+        assert!(Node::None.as_dictionary_mut().is_none());
+    }
+
+    // ── len / is_empty edge cases ─────────────────────────────────────────────
+
+    #[test]
+    fn len_empty_string_is_zero() {
+        assert_eq!(Node::Str("".into()).len(), 0);
+    }
+
+    #[test]
+    fn len_non_empty_string() {
+        assert_eq!(Node::Str("hello".into()).len(), 5);
+    }
+
+    #[test]
+    fn is_empty_integer_is_false() {
+        assert!(!Node::Integer(0).is_empty());
+        assert!(!Node::Integer(i64::MAX).is_empty());
+    }
+
+    // ── type_name ─────────────────────────────────────────────────────────────
+
+    #[test]
+    fn type_name_all_variants() {
+        assert_eq!(Node::Integer(0).type_name(), "integer");
+        assert_eq!(Node::Str("".into()).type_name(), "string");
+        assert_eq!(Node::List(vec![]).type_name(), "list");
+        assert_eq!(Node::Dictionary(HashMap::new()).type_name(), "dictionary");
+        assert_eq!(Node::None.type_name(), "none");
+    }
+
+    // ── get / get_mut ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn get_on_non_dictionary_returns_none() {
+        assert!(Node::Integer(0).get("key").is_none());
+        assert!(Node::Str("".into()).get("key").is_none());
+        assert!(Node::List(vec![]).get("key").is_none());
+        assert!(Node::None.get("key").is_none());
+    }
+
+    #[test]
+    fn get_mut_on_non_dictionary_returns_none() {
+        assert!(Node::Integer(0).get_mut("key").is_none());
+        assert!(Node::None.get_mut("key").is_none());
+    }
+
+    // ── add_to_list / add_to_dictionary ───────────────────────────────────────
+
+    #[test]
+    fn add_to_list_multiple_items() {
+        let mut node = Node::List(vec![]);
+        for i in 0..5_i64 {
+            node.add_to_list(Node::Integer(i)).unwrap();
+        }
+        assert_eq!(node.len(), 5);
+        assert_eq!(node.as_list().unwrap()[4], Node::Integer(4));
+    }
+
+    #[test]
+    fn add_to_dictionary_overwrites_existing_key() {
+        let mut node = Node::Dictionary(HashMap::new());
+        node.add_to_dictionary("k", Node::Integer(1)).unwrap();
+        node.add_to_dictionary("k", Node::Integer(2)).unwrap();
+        assert_eq!(node.get("k"), Some(&Node::Integer(2)));
+        assert_eq!(node.len(), 1); // only one key
+    }
+
+    #[test]
+    fn add_to_list_error_non_list_variants() {
+        for mut n in [
+            Node::Integer(0),
+            Node::Str("".into()),
+            Node::Dictionary(HashMap::new()),
+            Node::None,
+        ] {
+            assert!(n.add_to_list(Node::Integer(0)).is_err());
+        }
+    }
+
+    #[test]
+    fn add_to_dictionary_error_non_dict_variants() {
+        for mut n in [
+            Node::Integer(0),
+            Node::Str("".into()),
+            Node::List(vec![]),
+            Node::None,
+        ] {
+            assert!(n.add_to_dictionary("k", Node::Integer(0)).is_err());
+        }
+    }
+
+    // ── From conversions ──────────────────────────────────────────────────────
+
+    #[test]
+    fn from_i64_boundary_values() {
+        assert_eq!(Node::from(0_i64), Node::Integer(0));
+        assert_eq!(Node::from(i64::MAX), Node::Integer(i64::MAX));
+        assert_eq!(Node::from(i64::MIN), Node::Integer(i64::MIN));
+    }
+
+    #[test]
+    fn from_string_owned() {
+        let s = String::from("owned");
+        let node = Node::from(s);
+        assert_eq!(node, Node::Str("owned".into()));
+    }
+
+    #[test]
+    fn from_vec_of_i64() {
+        let node = Node::from(vec![10_i64, 20, 30]);
+        match node {
+            Node::List(l) => {
+                assert_eq!(l.len(), 3);
+                assert_eq!(l[1], Node::Integer(20));
+            }
+            _ => panic!("Expected List"),
+        }
+    }
+
+    #[test]
+    fn from_hashmap() {
+        let mut map = HashMap::new();
+        map.insert("x".to_string(), Node::Integer(9));
+        let node = Node::from(map);
+        assert_eq!(node.get("x"), Some(&Node::Integer(9)));
+    }
+
+    // ── get_required / optional error messages ────────────────────────────────
+
+    #[test]
+    fn get_required_error_message_contains_key() {
+        let node = Node::Dictionary(HashMap::new());
+        let err = node.get_required("my_key").unwrap_err();
+        assert!(err.contains("my_key"), "error was: {}", err);
+    }
+
+    #[test]
+    fn get_int_required_error_on_wrong_type_contains_key() {
+        let mut map = HashMap::new();
+        map.insert("name".into(), Node::Str("Alice".into()));
+        let node = Node::Dictionary(map);
+        let err = node.get_int_required("name").unwrap_err();
+        assert!(err.contains("name"), "error was: {}", err);
+    }
+
+    #[test]
+    fn get_string_required_error_on_wrong_type() {
+        let mut map = HashMap::new();
+        map.insert("age".into(), Node::Integer(30));
+        let node = Node::Dictionary(map);
+        assert!(node.get_string_required("age").is_err());
+    }
+
+    #[test]
+    fn get_list_required_error_on_wrong_type() {
+        let mut map = HashMap::new();
+        map.insert("v".into(), Node::Integer(1));
+        let node = Node::Dictionary(map);
+        assert!(node.get_list_required("v").is_err());
+    }
+
+    #[test]
+    fn get_dict_required_error_on_wrong_type() {
+        let mut map = HashMap::new();
+        map.insert("v".into(), Node::Str("s".into()));
+        let node = Node::Dictionary(map);
+        assert!(node.get_dict_required("v").is_err());
+    }
+
+    #[test]
+    fn get_dict_optional_returns_some_for_dict_field() {
+        let mut inner = HashMap::new();
+        inner.insert("a".into(), Node::Integer(1));
+        let mut outer = HashMap::new();
+        outer.insert("nested".into(), Node::Dictionary(inner));
+        let node = Node::Dictionary(outer);
+        assert_eq!(node.get_dict_optional("nested").map(|d| d.len()), Some(1));
+        assert!(node.get_dict_optional("missing").is_none());
+        assert!(node.get_dict_optional("nested").is_some());
+    }
+
+    // ── Display edge cases ────────────────────────────────────────────────────
+
+    #[test]
+    fn display_negative_integer() {
+        assert_eq!(format!("{}", Node::Integer(-7)), "-7");
+    }
+
+    #[test]
+    fn display_integer_zero() {
+        assert_eq!(format!("{}", Node::Integer(0)), "0");
+    }
+
+    #[test]
+    fn display_empty_list() {
+        assert_eq!(format!("{}", Node::List(vec![])), "[]");
+    }
+
+    #[test]
+    fn display_empty_dictionary() {
+        assert_eq!(format!("{}", Node::Dictionary(HashMap::new())), "{}");
+    }
+
+    #[test]
+    fn display_empty_string() {
+        assert_eq!(format!("{}", Node::Str("".into())), "\"\"");
+    }
+
+    #[test]
+    fn display_list_with_nested_list() {
+        let inner = Node::List(vec![Node::Integer(1), Node::Integer(2)]);
+        let outer = Node::List(vec![inner, Node::Integer(3)]);
+        assert_eq!(format!("{}", outer), "[[1, 2], 3]");
+    }
+
+    // ── make_node helper ──────────────────────────────────────────────────────
+
+    #[test]
+    fn make_node_i64_boundary() {
+        assert_eq!(make_node(i64::MAX), Node::Integer(i64::MAX));
+        assert_eq!(make_node(i64::MIN), Node::Integer(i64::MIN));
+    }
+
+    #[test]
+    fn make_node_string_owned() {
+        assert_eq!(make_node(String::from("hi")), Node::Str("hi".into()));
+    }
 }

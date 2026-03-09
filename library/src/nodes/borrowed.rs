@@ -334,4 +334,225 @@ mod tests {
             _ => panic!("Expected Node::List"),
         }
     }
+
+    // ── is_* checks for all four variants ────────────────────────────────────
+
+    #[test]
+    fn is_list_and_is_dictionary_type_checks() {
+        let list_node = BorrowedNode::List(vec![]);
+        assert!(list_node.is_list());
+        assert!(!list_node.is_integer());
+        assert!(!list_node.is_bytes());
+        assert!(!list_node.is_dictionary());
+
+        let dict_node = BorrowedNode::Dictionary(HashMap::new());
+        assert!(dict_node.is_dictionary());
+        assert!(!dict_node.is_integer());
+        assert!(!dict_node.is_bytes());
+        assert!(!dict_node.is_list());
+    }
+
+    // ── as_* accessors ────────────────────────────────────────────────────────
+
+    #[test]
+    fn as_integer_returns_none_for_non_integer() {
+        assert_eq!(BorrowedNode::Bytes(b"x").as_integer(), None);
+        assert_eq!(BorrowedNode::List(vec![]).as_integer(), None);
+        assert_eq!(BorrowedNode::Dictionary(HashMap::new()).as_integer(), None);
+    }
+
+    #[test]
+    fn as_bytes_returns_none_for_non_bytes() {
+        assert_eq!(BorrowedNode::Integer(1).as_bytes(), None);
+        assert_eq!(BorrowedNode::List(vec![]).as_bytes(), None);
+        assert_eq!(BorrowedNode::Dictionary(HashMap::new()).as_bytes(), None);
+    }
+
+    #[test]
+    fn as_list_returns_some_for_list() {
+        let list = BorrowedNode::List(vec![BorrowedNode::Integer(1)]);
+        let inner = list.as_list().unwrap();
+        assert_eq!(inner.len(), 1);
+    }
+
+    #[test]
+    fn as_list_returns_none_for_non_list() {
+        assert!(BorrowedNode::Integer(0).as_list().is_none());
+        assert!(BorrowedNode::Bytes(b"").as_list().is_none());
+        assert!(BorrowedNode::Dictionary(HashMap::new()).as_list().is_none());
+    }
+
+    #[test]
+    fn as_dictionary_returns_some_for_dict() {
+        let mut d = HashMap::new();
+        d.insert(b"a".as_ref(), BorrowedNode::Integer(1));
+        let dict = BorrowedNode::Dictionary(d);
+        let inner = dict.as_dictionary().unwrap();
+        assert_eq!(inner.len(), 1);
+    }
+
+    #[test]
+    fn as_dictionary_returns_none_for_non_dict() {
+        assert!(BorrowedNode::Integer(0).as_dictionary().is_none());
+        assert!(BorrowedNode::Bytes(b"").as_dictionary().is_none());
+        assert!(BorrowedNode::List(vec![]).as_dictionary().is_none());
+    }
+
+    #[test]
+    fn as_integer_boundary_values() {
+        assert_eq!(BorrowedNode::Integer(0).as_integer(), Some(0));
+        assert_eq!(BorrowedNode::Integer(i64::MAX).as_integer(), Some(i64::MAX));
+        assert_eq!(BorrowedNode::Integer(i64::MIN).as_integer(), Some(i64::MIN));
+        assert_eq!(BorrowedNode::Integer(-1).as_integer(), Some(-1));
+    }
+
+    #[test]
+    fn as_bytes_empty_slice() {
+        let node = BorrowedNode::Bytes(b"");
+        assert_eq!(node.as_bytes(), Some(&b""[..]));
+    }
+
+    // ── Display ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn display_negative_integer() {
+        assert_eq!(format!("{}", BorrowedNode::Integer(-99)), "-99");
+    }
+
+    #[test]
+    fn display_zero_integer() {
+        assert_eq!(format!("{}", BorrowedNode::Integer(0)), "0");
+    }
+
+    #[test]
+    fn display_empty_bytes() {
+        assert_eq!(format!("{}", BorrowedNode::Bytes(b"")), "\"\"");
+    }
+
+    #[test]
+    fn display_non_utf8_bytes_falls_back_to_debug() {
+        let node = BorrowedNode::Bytes(b"\xFF\x00");
+        let s = format!("{}", node);
+        // Should not be a quoted UTF-8 string, should be the debug repr
+        assert!(!s.starts_with('"') || s.contains("\\xff") || s.contains("255"));
+    }
+
+    #[test]
+    fn display_empty_list() {
+        assert_eq!(format!("{}", BorrowedNode::List(vec![])), "[]");
+    }
+
+    #[test]
+    fn display_list_with_items() {
+        let list = BorrowedNode::List(vec![BorrowedNode::Integer(1), BorrowedNode::Bytes(b"ab")]);
+        assert_eq!(format!("{}", list), "[1, \"ab\"]");
+    }
+
+    #[test]
+    fn display_empty_dictionary() {
+        assert_eq!(
+            format!("{}", BorrowedNode::Dictionary(HashMap::new())),
+            "{}"
+        );
+    }
+
+    // ── Clone / PartialEq ─────────────────────────────────────────────────────
+
+    #[test]
+    fn borrowed_node_equality_integers() {
+        assert_eq!(BorrowedNode::Integer(42), BorrowedNode::Integer(42));
+        assert_ne!(BorrowedNode::Integer(1), BorrowedNode::Integer(2));
+    }
+
+    #[test]
+    fn borrowed_node_equality_bytes() {
+        assert_eq!(BorrowedNode::Bytes(b"abc"), BorrowedNode::Bytes(b"abc"));
+        assert_ne!(BorrowedNode::Bytes(b"abc"), BorrowedNode::Bytes(b"xyz"));
+    }
+
+    #[test]
+    fn borrowed_node_clone_integer() {
+        let original = BorrowedNode::Integer(7);
+        let cloned = original.clone();
+        assert_eq!(original, cloned);
+    }
+
+    #[test]
+    fn borrowed_node_clone_bytes() {
+        let original = BorrowedNode::Bytes(b"hello");
+        let cloned = original.clone();
+        assert_eq!(original, cloned);
+    }
+
+    #[test]
+    fn borrowed_node_clone_list() {
+        let original = BorrowedNode::List(vec![BorrowedNode::Integer(1)]);
+        let cloned = original.clone();
+        assert_eq!(original, cloned);
+    }
+
+    // ── to_node edge cases ────────────────────────────────────────────────────
+
+    #[test]
+    fn to_node_integer_boundary_values() {
+        use crate::nodes::node::Node;
+        assert!(matches!(
+            BorrowedNode::Integer(0).to_node(),
+            Node::Integer(0)
+        ));
+        assert!(matches!(
+            BorrowedNode::Integer(i64::MAX).to_node(),
+            Node::Integer(i64::MAX)
+        ));
+        assert!(matches!(
+            BorrowedNode::Integer(i64::MIN).to_node(),
+            Node::Integer(i64::MIN)
+        ));
+    }
+
+    #[test]
+    fn to_node_empty_bytes() {
+        use crate::nodes::node::Node;
+        let n = BorrowedNode::Bytes(b"").to_node();
+        assert!(matches!(n, Node::Str(ref s) if s.is_empty()));
+    }
+
+    #[test]
+    fn to_node_empty_list() {
+        use crate::nodes::node::Node;
+        let n = BorrowedNode::List(vec![]).to_node();
+        match n {
+            Node::List(l) => assert!(l.is_empty()),
+            _ => panic!("Expected Node::List"),
+        }
+    }
+
+    #[test]
+    fn to_node_empty_dictionary() {
+        use crate::nodes::node::Node;
+        let n = BorrowedNode::Dictionary(HashMap::new()).to_node();
+        match n {
+            Node::Dictionary(m) => assert!(m.is_empty()),
+            _ => panic!("Expected Node::Dictionary"),
+        }
+    }
+
+    #[test]
+    fn to_node_list_of_integers() {
+        use crate::nodes::node::Node;
+        let list = BorrowedNode::List(vec![
+            BorrowedNode::Integer(-1),
+            BorrowedNode::Integer(0),
+            BorrowedNode::Integer(1),
+        ]);
+        match list.to_node() {
+            Node::List(l) => {
+                assert_eq!(l.len(), 3);
+                assert!(matches!(l[0], Node::Integer(-1)));
+                assert!(matches!(l[1], Node::Integer(0)));
+                assert!(matches!(l[2], Node::Integer(1)));
+            }
+            _ => panic!("Expected Node::List"),
+        }
+    }
 }

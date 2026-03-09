@@ -175,4 +175,167 @@ mod tests {
         assert_eq!(content, test_content);
         cleanup_file(&path);
     }
+
+    #[test]
+    fn current_does_not_advance_position() {
+        let path = create_test_file("abc");
+        let mut source = File::new(&path).unwrap();
+        assert_eq!(source.current(), Some('a'));
+        assert_eq!(source.current(), Some('a'));
+        assert_eq!(source.current(), Some('a'));
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn more_returns_true_at_start_of_non_empty_file() {
+        let path = create_test_file("x");
+        let mut source = File::new(&path).unwrap();
+        assert!(source.more());
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn more_returns_false_after_last_byte() {
+        let path = create_test_file("x");
+        let mut source = File::new(&path).unwrap();
+        source.next(); // consume the only byte
+        assert!(!source.more());
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn next_past_end_does_not_panic() {
+        let path = create_test_file("a");
+        let mut source = File::new(&path).unwrap();
+        source.next(); // at end
+        source.next(); // past end – must not panic
+        assert_eq!(source.current(), None);
+        assert!(!source.more());
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn single_byte_file() {
+        let path = create_test_file("z");
+        let mut source = File::new(&path).unwrap();
+        assert!(source.more());
+        assert_eq!(source.current(), Some('z'));
+        source.next();
+        assert!(!source.more());
+        assert_eq!(source.current(), None);
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn traverse_all_chars_in_order() {
+        let path = create_test_file("i42e");
+        let mut source = File::new(&path).unwrap();
+        let expected = ['i', '4', '2', 'e'];
+        for &ch in &expected {
+            assert_eq!(source.current(), Some(ch));
+            source.next();
+        }
+        assert_eq!(source.current(), None);
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn more_tracks_position_correctly() {
+        let path = create_test_file("ab");
+        let mut source = File::new(&path).unwrap();
+        assert!(source.more());
+        source.next();
+        assert!(source.more());
+        source.next();
+        assert!(!source.more());
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn reset_on_fresh_file_stays_at_first_char() {
+        let path = create_test_file("hello");
+        let mut source = File::new(&path).unwrap();
+        source.reset();
+        assert_eq!(source.current(), Some('h'));
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn reset_mid_stream_returns_to_first_char() {
+        let path = create_test_file("abcd");
+        let mut source = File::new(&path).unwrap();
+        source.next();
+        source.next();
+        assert_eq!(source.current(), Some('c'));
+        source.reset();
+        assert_eq!(source.current(), Some('a'));
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn reset_then_traverse_again() {
+        let path = create_test_file("abc");
+        let mut source = File::new(&path).unwrap();
+        while source.more() {
+            source.next();
+        }
+        source.reset();
+        assert!(source.more());
+        assert_eq!(source.current(), Some('a'));
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn bencode_list_traversal() {
+        let input = "l4:spami42ee";
+        let path = create_test_file(input);
+        let mut source = File::new(&path).unwrap();
+        let mut collected = String::new();
+        while source.more() {
+            collected.push(source.current().unwrap());
+            source.next();
+        }
+        assert_eq!(collected, input);
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn bencode_dict_traversal() {
+        let input = "d3:cow3:moo4:spam4:eggse";
+        let path = create_test_file(input);
+        let mut source = File::new(&path).unwrap();
+        let mut collected = String::new();
+        while source.more() {
+            collected.push(source.current().unwrap());
+            source.next();
+        }
+        assert_eq!(collected, input);
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn bencode_negative_integer_traversal() {
+        let input = "i-7e";
+        let path = create_test_file(input);
+        let mut source = File::new(&path).unwrap();
+        let mut collected = String::new();
+        while source.more() {
+            collected.push(source.current().unwrap());
+            source.next();
+        }
+        assert_eq!(collected, input);
+        cleanup_file(&path);
+    }
+
+    #[test]
+    fn multiple_resets_are_idempotent() {
+        let path = create_test_file("xyz");
+        let mut source = File::new(&path).unwrap();
+        source.next();
+        source.reset();
+        source.reset();
+        assert_eq!(source.current(), Some('x'));
+        assert!(source.more());
+        cleanup_file(&path);
+    }
 }

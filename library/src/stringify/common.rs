@@ -115,4 +115,131 @@ mod tests {
         escape_string("abc123!@#$%^&*()", &mut destination);
         assert_eq!(destination.to_string(), "abc123!@#$%^&*()");
     }
+
+    #[test]
+    fn test_escape_space_is_preserved() {
+        // Space (0x20) is explicitly handled as printable
+        let mut destination = Buffer::new();
+        escape_string("a b c", &mut destination);
+        assert_eq!(destination.to_string(), "a b c");
+    }
+
+    #[test]
+    fn test_escape_only_quote() {
+        let mut destination = Buffer::new();
+        escape_string("\"", &mut destination);
+        assert_eq!(destination.to_string(), "\\\"");
+    }
+
+    #[test]
+    fn test_escape_only_backslash() {
+        let mut destination = Buffer::new();
+        escape_string("\\", &mut destination);
+        assert_eq!(destination.to_string(), "\\\\");
+    }
+
+    #[test]
+    fn test_escape_consecutive_quotes() {
+        let mut destination = Buffer::new();
+        escape_string("\"\"\"", &mut destination);
+        assert_eq!(destination.to_string(), "\\\"\\\"\\\"");
+    }
+
+    #[test]
+    fn test_escape_consecutive_backslashes() {
+        let mut destination = Buffer::new();
+        escape_string("\\\\", &mut destination);
+        assert_eq!(destination.to_string(), "\\\\\\\\");
+    }
+
+    #[test]
+    fn test_escape_quote_and_backslash_adjacent() {
+        let mut destination = Buffer::new();
+        escape_string("\\\"", &mut destination);
+        assert_eq!(destination.to_string(), "\\\\\\\"");
+    }
+
+    #[test]
+    fn test_escape_high_utf8_bytes() {
+        // 'é' (U+00E9) encodes as UTF-8 bytes [0xC3, 0xA9]; both are non-graphic and get \u escaped
+        let mut destination = Buffer::new();
+        escape_string("é", &mut destination);
+        assert_eq!(destination.to_string(), "\\u00c3\\u00a9");
+    }
+
+    #[test]
+    fn test_escape_latin_y_diaeresis() {
+        // 'ÿ' (U+00FF) encodes as UTF-8 bytes [0xC3, 0xBF]
+        let mut destination = Buffer::new();
+        escape_string("ÿ", &mut destination);
+        assert_eq!(destination.to_string(), "\\u00c3\\u00bf");
+    }
+
+    #[test]
+    fn test_escape_byte_0x1f() {
+        // 0x1F is the last non-printable ASCII control character before space
+        let mut destination = Buffer::new();
+        escape_string("\x1f", &mut destination);
+        assert_eq!(destination.to_string(), "\\u001f");
+    }
+
+    #[test]
+    fn test_escape_leading_and_trailing_special_chars() {
+        let mut destination = Buffer::new();
+        escape_string("\ntext\n", &mut destination);
+        assert_eq!(destination.to_string(), "\\u000atext\\u000a");
+    }
+
+    #[test]
+    fn test_escape_only_unprintable_sequence() {
+        let mut destination = Buffer::new();
+        escape_string("\x01\x02\x03", &mut destination);
+        assert_eq!(destination.to_string(), "\\u0001\\u0002\\u0003");
+    }
+
+    #[test]
+    fn test_escape_length_increases_for_escaped_chars() {
+        // Quote gets \", so a single '"' expands to 2 chars
+        let mut dest_plain = Buffer::new();
+        let mut dest_quoted = Buffer::new();
+        escape_string("a", &mut dest_plain);
+        escape_string("\"", &mut dest_quoted);
+        assert_eq!(dest_plain.to_string().len(), 1);
+        assert_eq!(dest_quoted.to_string().len(), 2);
+    }
+
+    #[test]
+    fn test_escape_unprintable_length_is_six() {
+        // \u00xx is always 6 characters
+        let mut destination = Buffer::new();
+        escape_string("\n", &mut destination);
+        assert_eq!(destination.to_string().len(), 6);
+    }
+
+    #[test]
+    fn test_escape_long_string_no_special_chars() {
+        let input: String = "a".repeat(1000);
+        let mut destination = Buffer::new();
+        escape_string(&input, &mut destination);
+        assert_eq!(destination.to_string(), input);
+    }
+
+    #[test]
+    fn test_escape_is_idempotent_for_plain_text() {
+        // Calling escape_string on already-escaped output of a plain string gives the same result
+        let plain = "hello world";
+        let mut dest1 = Buffer::new();
+        escape_string(plain, &mut dest1);
+        let first = dest1.to_string();
+        // first result should equal the original since no special chars
+        assert_eq!(first, plain);
+    }
+
+    #[test]
+    fn test_escape_all_digits_and_letters_preserved() {
+        let input = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let mut destination = Buffer::new();
+        escape_string(input, &mut destination);
+        assert_eq!(destination.to_string(), input);
+    }
 }

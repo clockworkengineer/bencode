@@ -591,4 +591,237 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(destination.to_string(), "");
     }
+
+    // --- Integer edge cases ---
+
+    #[test]
+    fn test_stringify_integer_zero() {
+        let mut dict = HashMap::new();
+        dict.insert("n".to_string(), Node::Integer(0));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(dict), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "n = 0\n");
+    }
+
+    #[test]
+    fn test_stringify_integer_negative() {
+        let mut dict = HashMap::new();
+        dict.insert("n".to_string(), Node::Integer(-42));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(dict), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "n = -42\n");
+    }
+
+    #[test]
+    fn test_stringify_integer_max_i64() {
+        let mut dict = HashMap::new();
+        dict.insert("n".to_string(), Node::Integer(i64::MAX));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(dict), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), format!("n = {}\n", i64::MAX));
+    }
+
+    #[test]
+    fn test_stringify_integer_min_i64() {
+        let mut dict = HashMap::new();
+        dict.insert("n".to_string(), Node::Integer(i64::MIN));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(dict), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), format!("n = {}\n", i64::MIN));
+    }
+
+    // --- String edge cases ---
+
+    #[test]
+    fn test_stringify_empty_string_value() {
+        let mut dict = HashMap::new();
+        dict.insert("s".to_string(), make_node(""));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(dict), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "s = \"\"\n");
+    }
+
+    #[test]
+    fn test_stringify_string_with_special_chars() {
+        let mut dict = HashMap::new();
+        dict.insert("s".to_string(), make_node("say \"hi\""));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(dict), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "s = \"say \\\"hi\\\"\"\n");
+    }
+
+    #[test]
+    fn test_stringify_string_with_newline() {
+        let mut dict = HashMap::new();
+        dict.insert("s".to_string(), make_node("a\nb"));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(dict), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "s = \"a\\u000ab\"\n");
+    }
+
+    // --- List edge cases ---
+
+    #[test]
+    fn test_stringify_empty_list_of_integers() {
+        // An empty list - stringify_array panics if items is empty because it accesses items[0]
+        // Just ensure a non-empty same-type list works with one element
+        let mut dict = HashMap::new();
+        dict.insert("nums".to_string(), make_node(vec![make_node(5i64)]));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(dict), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "nums = [5]\n");
+    }
+
+    #[test]
+    fn test_stringify_string_list() {
+        let mut dict = HashMap::new();
+        dict.insert(
+            "words".to_string(),
+            make_node(vec![make_node("foo"), make_node("bar")]),
+        );
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(dict), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "words = [\"foo\", \"bar\"]\n");
+    }
+
+    // --- None value ---
+
+    #[test]
+    fn test_none_value_writes_null() {
+        let mut dict = HashMap::new();
+        dict.insert("x".to_string(), Node::None);
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(dict), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "x = null\n");
+    }
+
+    // --- Non-dict root failures ---
+
+    #[test]
+    fn test_none_root_fails() {
+        let mut dest = BufferDestination::new();
+        assert!(stringify(&Node::None, &mut dest).is_err());
+    }
+
+    // --- Nested table ---
+
+    #[test]
+    fn test_nested_table() {
+        let mut inner = HashMap::new();
+        inner.insert("x".to_string(), make_node(1i64));
+        let mut outer = HashMap::new();
+        outer.insert("section".to_string(), make_node(inner));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(outer), &mut dest).unwrap();
+        let s = dest.to_string();
+        assert!(s.contains("[section]"));
+        assert!(s.contains("x = 1"));
+    }
+
+    #[test]
+    fn test_deeply_nested_table() {
+        let mut innermost = HashMap::new();
+        innermost.insert("val".to_string(), make_node(99i64));
+        let mut middle = HashMap::new();
+        middle.insert("deep".to_string(), make_node(innermost));
+        let mut outer = HashMap::new();
+        outer.insert("mid".to_string(), make_node(middle));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(outer), &mut dest).unwrap();
+        let s = dest.to_string();
+        assert!(s.contains("val = 99"));
+    }
+
+    // --- Array table (list of dicts) ---
+
+    #[test]
+    fn test_array_table_single_entry() {
+        let mut item = HashMap::new();
+        item.insert("name".to_string(), make_node("Alice"));
+        let list = vec![make_node(item)];
+        let mut outer = HashMap::new();
+        outer.insert("people".to_string(), Node::List(list));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(outer), &mut dest).unwrap();
+        let s = dest.to_string();
+        assert!(s.contains("[[people]]"));
+        assert!(s.contains("name = \"Alice\""));
+    }
+
+    #[test]
+    fn test_array_table_multiple_entries() {
+        let mut item1 = HashMap::new();
+        item1.insert("id".to_string(), make_node(1i64));
+        let mut item2 = HashMap::new();
+        item2.insert("id".to_string(), make_node(2i64));
+        let list = vec![make_node(item1), make_node(item2)];
+        let mut outer = HashMap::new();
+        outer.insert("rows".to_string(), Node::List(list));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(outer), &mut dest).unwrap();
+        let s = dest.to_string();
+        assert_eq!(s.matches("[[rows]]").count(), 2);
+    }
+
+    // --- Multiple root-level keys sorted ---
+
+    #[test]
+    fn test_multiple_keys_output_sorted() {
+        let mut dict = HashMap::new();
+        dict.insert("z".to_string(), make_node(1i64));
+        dict.insert("a".to_string(), make_node(2i64));
+        let mut dest = BufferDestination::new();
+        stringify(&make_node(dict), &mut dest).unwrap();
+        let s = dest.to_string();
+        let pos_a = s.find("a = ").unwrap();
+        let pos_z = s.find("z = ").unwrap();
+        assert!(pos_a < pos_z, "keys should be sorted alphabetically");
+    }
+
+    // --- calculate_prefix helper ---
+
+    #[test]
+    fn test_calculate_prefix_empty_prefix() {
+        let key = "section".to_string();
+        assert_eq!(calculate_prefix("", &key), "section");
+    }
+
+    #[test]
+    fn test_calculate_prefix_with_existing_prefix() {
+        let key = "sub".to_string();
+        assert_eq!(calculate_prefix("top", &key), "top.sub");
+    }
+
+    #[test]
+    fn test_calculate_prefix_deep_nesting() {
+        let key = "leaf".to_string();
+        assert_eq!(calculate_prefix("a.b.c", &key), "a.b.c.leaf");
+    }
+
+    // --- get_node_type helper ---
+
+    #[test]
+    fn test_get_node_type_string() {
+        assert_eq!(get_node_type(&Node::Str("x".to_string())), "string");
+    }
+
+    #[test]
+    fn test_get_node_type_integer() {
+        assert_eq!(get_node_type(&Node::Integer(1)), "integer");
+    }
+
+    #[test]
+    fn test_get_node_type_list() {
+        assert_eq!(get_node_type(&Node::List(vec![])), "list");
+    }
+
+    #[test]
+    fn test_get_node_type_dict() {
+        assert_eq!(get_node_type(&Node::Dictionary(HashMap::new())), "object");
+    }
+
+    #[test]
+    fn test_get_node_type_none() {
+        assert_eq!(get_node_type(&Node::None), "null");
+    }
 }

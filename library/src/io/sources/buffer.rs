@@ -132,4 +132,135 @@ mod tests {
             _ => assert!(false),
         }
     }
+
+    #[test]
+    fn current_on_empty_buffer_returns_none() {
+        let mut source = Buffer::new(&[]);
+        assert_eq!(source.current(), None);
+    }
+
+    #[test]
+    fn more_on_empty_buffer_returns_false() {
+        let mut source = Buffer::new(&[]);
+        assert!(!source.more());
+    }
+
+    #[test]
+    fn current_does_not_advance_position() {
+        let mut source = Buffer::new(b"xy");
+        assert_eq!(source.current(), Some('x'));
+        assert_eq!(source.current(), Some('x'));
+        assert_eq!(source.current(), Some('x'));
+    }
+
+    #[test]
+    fn next_past_end_does_not_panic() {
+        let mut source = Buffer::new(b"a");
+        source.next(); // now at end
+        source.next(); // past end – should not panic
+        assert_eq!(source.current(), None);
+        assert!(!source.more());
+    }
+
+    #[test]
+    fn reset_on_fresh_buffer_stays_at_start() {
+        let mut source = Buffer::new(b"hello");
+        source.reset();
+        assert_eq!(source.current(), Some('h'));
+    }
+
+    #[test]
+    fn reset_mid_stream_returns_to_first_char() {
+        let mut source = Buffer::new(b"abc");
+        source.next();
+        source.next();
+        assert_eq!(source.current(), Some('c'));
+        source.reset();
+        assert_eq!(source.current(), Some('a'));
+    }
+
+    #[test]
+    fn traverse_all_chars_in_order() {
+        let mut source = Buffer::new(b"i42e");
+        let expected = ['i', '4', '2', 'e'];
+        for &ch in &expected {
+            assert_eq!(source.current(), Some(ch));
+            source.next();
+        }
+        assert_eq!(source.current(), None);
+    }
+
+    #[test]
+    fn more_tracks_position_correctly() {
+        let mut source = Buffer::new(b"ab");
+        assert!(source.more());
+        source.next();
+        assert!(source.more());
+        source.next();
+        assert!(!source.more());
+    }
+
+    #[test]
+    fn bencode_list_traversal() {
+        let mut source = Buffer::new(b"l4:spami42ee");
+        let expected = "l4:spami42ee";
+        let mut collected = String::new();
+        while source.more() {
+            if let Some(ch) = source.current() {
+                collected.push(ch);
+            }
+            source.next();
+        }
+        assert_eq!(collected, expected);
+    }
+
+    #[test]
+    fn bencode_dict_traversal() {
+        let input = b"d3:cow3:moo4:spam4:eggse";
+        let mut source = Buffer::new(input);
+        let mut collected = String::new();
+        while source.more() {
+            if let Some(ch) = source.current() {
+                collected.push(ch);
+            }
+            source.next();
+        }
+        assert_eq!(collected, String::from_utf8_lossy(input));
+    }
+
+    #[test]
+    fn to_string_returns_full_content_regardless_of_position() {
+        let mut source = Buffer::new(b"i99e");
+        source.next();
+        source.next();
+        // to_string should still return the full buffer, not just remaining bytes
+        assert_eq!(source.to_string(), "i99e");
+    }
+
+    #[test]
+    fn to_string_empty_buffer_is_empty_string() {
+        let source = Buffer::new(&[]);
+        assert_eq!(source.to_string(), "");
+    }
+
+    #[test]
+    fn reset_then_traverse_again() {
+        let mut source = Buffer::new(b"abc");
+        while source.more() {
+            source.next();
+        }
+        source.reset();
+        assert!(source.more());
+        assert_eq!(source.current(), Some('a'));
+    }
+
+    #[test]
+    fn single_byte_buffer() {
+        let mut source = Buffer::new(b"z");
+        assert!(source.more());
+        assert_eq!(source.current(), Some('z'));
+        source.next();
+        assert!(!source.more());
+        assert_eq!(source.current(), None);
+    }
 }

@@ -1,6 +1,6 @@
-use std::fs::File as StdFile;
-use std::io::{Write, Read, Seek};
 use crate::io::traits::IDestination;
+use std::fs::File as StdFile;
+use std::io::{Read, Seek, Write};
 
 /// A file-based destination for writing bencode data to disk.
 /// Implements file operations for storing and manipulating encoded data.
@@ -41,7 +41,6 @@ impl File {
     pub fn close(&self) -> std::io::Result<()> {
         Ok(())
     }
-
 }
 
 impl IDestination for File {
@@ -233,6 +232,164 @@ mod tests {
         fs::remove_file(path)?;
         Ok(())
     }
-    
-}
 
+    #[test]
+    fn add_byte_increments_length_by_one() -> std::io::Result<()> {
+        let path = "test_add_byte_len.txt";
+        let mut file = File::new(path)?;
+        file.add_byte(b'x');
+        assert_eq!(file.file_length(), 1);
+        file.add_byte(b'y');
+        assert_eq!(file.file_length(), 2);
+        file.add_byte(b'z');
+        assert_eq!(file.file_length(), 3);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn add_bytes_empty_string_is_noop() -> std::io::Result<()> {
+        let path = "test_add_bytes_empty.txt";
+        let mut file = File::new(path)?;
+        file.add_bytes("");
+        assert_eq!(file.file_length(), 0);
+        assert_eq!(file.last(), None);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn add_bytes_length_matches_str_byte_count() -> std::io::Result<()> {
+        let path = "test_add_bytes_len.txt";
+        let mut file = File::new(path)?;
+        file.add_bytes("hello");
+        assert_eq!(file.file_length(), 5);
+        file.add_bytes("!!");
+        assert_eq!(file.file_length(), 7);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn last_after_add_bytes_returns_last_char() -> std::io::Result<()> {
+        let path = "test_last_add_bytes.txt";
+        let mut file = File::new(path)?;
+        file.add_bytes("spam");
+        assert_eq!(file.last(), Some(b'm'));
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn last_single_byte() -> std::io::Result<()> {
+        let path = "test_last_single.txt";
+        let mut file = File::new(path)?;
+        file.add_byte(b'e');
+        assert_eq!(file.last(), Some(b'e'));
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn multiple_add_bytes_accumulates_content() -> std::io::Result<()> {
+        let path = "test_accumulate.txt";
+        let mut file = File::new(path)?;
+        file.add_bytes("4:");
+        file.add_bytes("spam");
+        let mut content = String::new();
+        StdFile::open(path)?.read_to_string(&mut content)?;
+        assert_eq!(content, "4:spam");
+        assert_eq!(file.file_length(), 6);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn add_byte_then_add_bytes_mixed() -> std::io::Result<()> {
+        let path = "test_mixed.txt";
+        let mut file = File::new(path)?;
+        file.add_byte(b'i');
+        file.add_bytes("42");
+        file.add_byte(b'e');
+        let mut content = String::new();
+        StdFile::open(path)?.read_to_string(&mut content)?;
+        assert_eq!(content, "i42e");
+        assert_eq!(file.file_length(), 4);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn clear_then_rewrite_works() -> std::io::Result<()> {
+        let path = "test_clear_rewrite.txt";
+        let mut file = File::new(path)?;
+        file.add_bytes("first");
+        file.clear();
+        file.add_bytes("second");
+        let mut content = String::new();
+        StdFile::open(path)?.read_to_string(&mut content)?;
+        assert_eq!(content, "second");
+        assert_eq!(file.file_length(), 6);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn clear_resets_length_to_zero() -> std::io::Result<()> {
+        let path = "test_clear_len.txt";
+        let mut file = File::new(path)?;
+        file.add_bytes("some data");
+        file.clear();
+        assert_eq!(file.file_length(), 0);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn file_name_unchanged_after_write_and_clear() -> std::io::Result<()> {
+        let path = "test_name_stable.txt";
+        let mut file = File::new(path)?;
+        file.add_bytes("data");
+        file.clear();
+        assert_eq!(file.file_name(), path);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn bencode_dict_round_trip() -> std::io::Result<()> {
+        let path = "test_dict_roundtrip.txt";
+        let mut file = File::new(path)?;
+        file.add_bytes("d3:cow3:moo4:spam4:eggse");
+        let mut content = String::new();
+        StdFile::open(path)?.read_to_string(&mut content)?;
+        assert_eq!(content, "d3:cow3:moo4:spam4:eggse");
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn bencode_list_round_trip() -> std::io::Result<()> {
+        let path = "test_list_roundtrip.txt";
+        let mut file = File::new(path)?;
+        file.add_bytes("l4:spami42ee");
+        let mut content = String::new();
+        StdFile::open(path)?.read_to_string(&mut content)?;
+        assert_eq!(content, "l4:spami42ee");
+        assert_eq!(file.file_length(), 12);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn multiple_clears_are_idempotent() -> std::io::Result<()> {
+        let path = "test_multi_clear.txt";
+        let mut file = File::new(path)?;
+        file.clear();
+        file.clear();
+        assert_eq!(file.file_length(), 0);
+        assert_eq!(file.last(), None);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+}

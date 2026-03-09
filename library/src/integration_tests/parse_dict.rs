@@ -304,7 +304,7 @@ mod tests {
 
     #[test]
     fn test_dict_inside_list() {
-        let mut source = BufferSource::new(b"ld2:id i42eee");
+        let _source = BufferSource::new(b"ld2:id i42eee");
         // Key "id " (with space) — bencode is binary; test valid structure
         let mut source2 = BufferSource::new(b"ld2:idi42eee");
         match parse(&mut source2) {

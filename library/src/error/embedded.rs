@@ -156,6 +156,40 @@ mod tests {
     }
 
     #[test]
+    fn error_as_str_all_variants() {
+        assert_eq!(BencodeError::EmptyInput.as_str(), "Empty input");
+        assert_eq!(BencodeError::InvalidInteger.as_str(), "Invalid integer");
+        assert_eq!(
+            BencodeError::UnterminatedInteger.as_str(),
+            "Unterminated integer"
+        );
+        assert_eq!(
+            BencodeError::InvalidStringLength.as_str(),
+            "Invalid string length"
+        );
+        assert_eq!(BencodeError::StringTooShort.as_str(), "String too short");
+        assert_eq!(BencodeError::UnterminatedList.as_str(), "Unterminated list");
+        assert_eq!(
+            BencodeError::UnterminatedDictionary.as_str(),
+            "Unterminated dictionary"
+        );
+        assert_eq!(
+            BencodeError::DictKeysOutOfOrder.as_str(),
+            "Dictionary keys must be in order"
+        );
+        assert_eq!(
+            BencodeError::DictKeyMustBeString.as_str(),
+            "Dictionary key must be string"
+        );
+        assert_eq!(
+            BencodeError::UnexpectedCharacter('x').as_str(),
+            "Unexpected character"
+        );
+        assert_eq!(BencodeError::FileNotFound.as_str(), "File not found");
+        assert_eq!(BencodeError::IoError.as_str(), "IO error");
+    }
+
+    #[test]
     fn error_code_is_unique() {
         let errors = [
             BencodeError::EmptyInput,
@@ -180,6 +214,22 @@ mod tests {
     }
 
     #[test]
+    fn error_code_exact_values() {
+        assert_eq!(BencodeError::EmptyInput.code(), 1);
+        assert_eq!(BencodeError::InvalidInteger.code(), 2);
+        assert_eq!(BencodeError::UnterminatedInteger.code(), 3);
+        assert_eq!(BencodeError::InvalidStringLength.code(), 4);
+        assert_eq!(BencodeError::StringTooShort.code(), 5);
+        assert_eq!(BencodeError::UnterminatedList.code(), 6);
+        assert_eq!(BencodeError::UnterminatedDictionary.code(), 7);
+        assert_eq!(BencodeError::DictKeysOutOfOrder.code(), 8);
+        assert_eq!(BencodeError::DictKeyMustBeString.code(), 9);
+        assert_eq!(BencodeError::UnexpectedCharacter('!').code(), 10);
+        assert_eq!(BencodeError::FileNotFound.code(), 11);
+        assert_eq!(BencodeError::IoError.code(), 12);
+    }
+
+    #[test]
     fn error_display_works() {
         assert_eq!(format!("{}", BencodeError::EmptyInput), "Empty input");
         assert_eq!(
@@ -189,9 +239,222 @@ mod tests {
     }
 
     #[test]
+    fn error_display_all_variants() {
+        assert_eq!(format!("{}", BencodeError::EmptyInput), "Empty input");
+        assert_eq!(
+            format!("{}", BencodeError::InvalidInteger),
+            "Invalid integer"
+        );
+        assert_eq!(
+            format!("{}", BencodeError::UnterminatedInteger),
+            "Unterminated integer"
+        );
+        assert_eq!(
+            format!("{}", BencodeError::InvalidStringLength),
+            "Invalid string length"
+        );
+        assert_eq!(
+            format!("{}", BencodeError::StringTooShort),
+            "String too short"
+        );
+        assert_eq!(
+            format!("{}", BencodeError::UnterminatedList),
+            "Unterminated list"
+        );
+        assert_eq!(
+            format!("{}", BencodeError::UnterminatedDictionary),
+            "Unterminated dictionary"
+        );
+        assert_eq!(
+            format!("{}", BencodeError::DictKeysOutOfOrder),
+            "Dictionary keys must be in order"
+        );
+        assert_eq!(
+            format!("{}", BencodeError::DictKeyMustBeString),
+            "Dictionary key must be string"
+        );
+        assert_eq!(format!("{}", BencodeError::FileNotFound), "File not found");
+        assert_eq!(format!("{}", BencodeError::IoError), "IO error");
+    }
+
+    #[test]
+    fn unexpected_character_display_reflects_stored_char() {
+        assert_eq!(
+            format!("{}", BencodeError::UnexpectedCharacter('a')),
+            "Unexpected character: a"
+        );
+        assert_eq!(
+            format!("{}", BencodeError::UnexpectedCharacter('0')),
+            "Unexpected character: 0"
+        );
+        assert_eq!(
+            format!("{}", BencodeError::UnexpectedCharacter('!')),
+            "Unexpected character: !"
+        );
+        assert_eq!(
+            format!("{}", BencodeError::UnexpectedCharacter('\n')),
+            "Unexpected character: \n"
+        );
+    }
+
+    #[test]
+    fn unexpected_character_as_str_ignores_stored_char() {
+        // as_str() always returns the same static string regardless of the stored char
+        assert_eq!(
+            BencodeError::UnexpectedCharacter('a').as_str(),
+            "Unexpected character"
+        );
+        assert_eq!(
+            BencodeError::UnexpectedCharacter('Z').as_str(),
+            "Unexpected character"
+        );
+    }
+
+    #[test]
     fn error_from_string_works() {
         let err: BencodeError = "Invalid integer".into();
         assert_eq!(err, BencodeError::InvalidInteger);
+    }
+
+    #[test]
+    fn error_from_str_all_known_variants() {
+        assert_eq!(BencodeError::from("Empty input"), BencodeError::EmptyInput);
+        assert_eq!(
+            BencodeError::from("Invalid integer"),
+            BencodeError::InvalidInteger
+        );
+        assert_eq!(
+            BencodeError::from("Unterminated integer"),
+            BencodeError::UnterminatedInteger
+        );
+        assert_eq!(
+            BencodeError::from("Invalid string length"),
+            BencodeError::InvalidStringLength
+        );
+        assert_eq!(
+            BencodeError::from("String too short"),
+            BencodeError::StringTooShort
+        );
+        assert_eq!(
+            BencodeError::from("Unterminated list"),
+            BencodeError::UnterminatedList
+        );
+        assert_eq!(
+            BencodeError::from("Unterminated dictionary"),
+            BencodeError::UnterminatedDictionary
+        );
+        assert_eq!(
+            BencodeError::from("Dictionary keys must be in order"),
+            BencodeError::DictKeysOutOfOrder
+        );
+        assert_eq!(
+            BencodeError::from("Dictionary key must be string"),
+            BencodeError::DictKeyMustBeString
+        );
+        assert_eq!(
+            BencodeError::from("File not found"),
+            BencodeError::FileNotFound
+        );
+    }
+
+    #[test]
+    fn error_from_str_unknown_falls_back_to_io_error() {
+        assert_eq!(
+            BencodeError::from("some unknown error"),
+            BencodeError::IoError
+        );
+        assert_eq!(BencodeError::from(""), BencodeError::IoError);
+    }
+
+    #[test]
+    fn error_from_string_all_known_variants() {
+        assert_eq!(
+            BencodeError::from(String::from("Empty input")),
+            BencodeError::EmptyInput
+        );
+        assert_eq!(
+            BencodeError::from(String::from("Invalid integer")),
+            BencodeError::InvalidInteger
+        );
+        assert_eq!(
+            BencodeError::from(String::from("Unterminated integer")),
+            BencodeError::UnterminatedInteger
+        );
+        assert_eq!(
+            BencodeError::from(String::from("Invalid string length")),
+            BencodeError::InvalidStringLength
+        );
+        assert_eq!(
+            BencodeError::from(String::from("String too short")),
+            BencodeError::StringTooShort
+        );
+        assert_eq!(
+            BencodeError::from(String::from("Unterminated list")),
+            BencodeError::UnterminatedList
+        );
+        assert_eq!(
+            BencodeError::from(String::from("Unterminated dictionary")),
+            BencodeError::UnterminatedDictionary
+        );
+        assert_eq!(
+            BencodeError::from(String::from("Dictionary keys must be in order")),
+            BencodeError::DictKeysOutOfOrder
+        );
+        assert_eq!(
+            BencodeError::from(String::from("Dictionary key must be string")),
+            BencodeError::DictKeyMustBeString
+        );
+        assert_eq!(
+            BencodeError::from(String::from("File not found")),
+            BencodeError::FileNotFound
+        );
+    }
+
+    #[test]
+    fn error_from_string_unknown_falls_back_to_io_error() {
+        assert_eq!(
+            BencodeError::from(String::from("something random")),
+            BencodeError::IoError
+        );
+        assert_eq!(BencodeError::from(String::from("")), BencodeError::IoError);
+    }
+
+    #[test]
+    fn error_equality() {
+        assert_eq!(BencodeError::EmptyInput, BencodeError::EmptyInput);
+        assert_ne!(BencodeError::EmptyInput, BencodeError::IoError);
+        assert_eq!(
+            BencodeError::UnexpectedCharacter('a'),
+            BencodeError::UnexpectedCharacter('a')
+        );
+        assert_ne!(
+            BencodeError::UnexpectedCharacter('a'),
+            BencodeError::UnexpectedCharacter('b')
+        );
+    }
+
+    #[test]
+    fn error_is_copy() {
+        let original = BencodeError::InvalidInteger;
+        let copied = original; // Copy semantics – original still usable
+        assert_eq!(original, copied);
+    }
+
+    #[test]
+    fn error_is_clone() {
+        let original = BencodeError::UnexpectedCharacter('q');
+        let cloned = original.clone();
+        assert_eq!(original, cloned);
+    }
+
+    #[test]
+    fn error_debug_contains_variant_name() {
+        let s = format!("{:?}", BencodeError::EmptyInput);
+        assert!(s.contains("EmptyInput"), "Debug output was: {}", s);
+
+        let s = format!("{:?}", BencodeError::UnexpectedCharacter('x'));
+        assert!(s.contains("UnexpectedCharacter"), "Debug output was: {}", s);
+        assert!(s.contains('x'), "Debug output was: {}", s);
     }
 
     #[cfg(feature = "std")]
@@ -199,5 +462,27 @@ mod tests {
     fn error_to_string_works() {
         let s: String = BencodeError::InvalidInteger.into();
         assert_eq!(s, "Invalid integer");
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn error_to_string_all_variants() {
+        let s: String = BencodeError::EmptyInput.into();
+        assert_eq!(s, "Empty input");
+
+        let s: String = BencodeError::FileNotFound.into();
+        assert_eq!(s, "File not found");
+
+        let s: String = BencodeError::IoError.into();
+        assert_eq!(s, "IO error");
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn error_implements_std_error() {
+        use std::error::Error;
+        let err = BencodeError::EmptyInput;
+        // source() should return None as there is no cause chain
+        assert!(err.source().is_none());
     }
 }

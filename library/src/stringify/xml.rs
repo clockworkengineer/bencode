@@ -101,4 +101,234 @@ mod tests {
         stringify(&Node::None, &mut destination).unwrap();
         assert_eq!(destination.to_string(), "");
     }
+
+    // --- Integer edge cases ---
+
+    #[test]
+    fn test_integer_zero() {
+        let mut dest = Buffer::new();
+        stringify(&Node::Integer(0), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<integer>0</integer>");
+    }
+
+    #[test]
+    fn test_integer_negative() {
+        let mut dest = Buffer::new();
+        stringify(&Node::Integer(-7), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<integer>-7</integer>");
+    }
+
+    #[test]
+    fn test_integer_max_i64() {
+        let mut dest = Buffer::new();
+        stringify(&Node::Integer(i64::MAX), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), format!("<integer>{}</integer>", i64::MAX));
+    }
+
+    #[test]
+    fn test_integer_min_i64() {
+        let mut dest = Buffer::new();
+        stringify(&Node::Integer(i64::MIN), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), format!("<integer>{}</integer>", i64::MIN));
+    }
+
+    // --- String edge cases ---
+
+    #[test]
+    fn test_empty_string() {
+        let mut dest = Buffer::new();
+        stringify(&Node::Str(String::new()), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<string></string>");
+    }
+
+    #[test]
+    fn test_string_single_char() {
+        let mut dest = Buffer::new();
+        stringify(&Node::Str("z".into()), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<string>z</string>");
+    }
+
+    #[test]
+    fn test_string_with_double_quote_escaped() {
+        let mut dest = Buffer::new();
+        stringify(&Node::Str("say \"hi\"".into()), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<string>say \\\"hi\\\"</string>");
+    }
+
+    #[test]
+    fn test_string_with_backslash_escaped() {
+        let mut dest = Buffer::new();
+        stringify(&Node::Str("a\\b".into()), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<string>a\\\\b</string>");
+    }
+
+    #[test]
+    fn test_string_with_newline_escaped() {
+        let mut dest = Buffer::new();
+        stringify(&Node::Str("line1\nline2".into()), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<string>line1\\u000aline2</string>");
+    }
+
+    #[test]
+    fn test_string_with_tab_escaped() {
+        let mut dest = Buffer::new();
+        stringify(&Node::Str("col1\tcol2".into()), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<string>col1\\u0009col2</string>");
+    }
+
+    // --- List edge cases ---
+
+    #[test]
+    fn test_empty_list() {
+        let mut dest = Buffer::new();
+        stringify(&Node::List(vec![]), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<list></list>");
+    }
+
+    #[test]
+    fn test_list_single_integer() {
+        let mut dest = Buffer::new();
+        stringify(&Node::List(vec![Node::Integer(5)]), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<list><integer>5</integer></list>");
+    }
+
+    #[test]
+    fn test_list_of_strings() {
+        let mut dest = Buffer::new();
+        stringify(
+            &Node::List(vec![Node::Str("foo".into()), Node::Str("bar".into())]),
+            &mut dest,
+        )
+        .unwrap();
+        assert_eq!(
+            dest.to_string(),
+            "<list><string>foo</string><string>bar</string></list>"
+        );
+    }
+
+    #[test]
+    fn test_nested_list() {
+        let mut dest = Buffer::new();
+        let inner = Node::List(vec![Node::Integer(1), Node::Integer(2)]);
+        stringify(&Node::List(vec![inner, Node::Integer(3)]), &mut dest).unwrap();
+        assert_eq!(
+            dest.to_string(),
+            "<list><list><integer>1</integer><integer>2</integer></list><integer>3</integer></list>"
+        );
+    }
+
+    #[test]
+    fn test_list_with_none_produces_no_content() {
+        // None nodes emit nothing, so a list of [None, None] is just <list></list>
+        let mut dest = Buffer::new();
+        stringify(&Node::List(vec![Node::None, Node::None]), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<list></list>");
+    }
+
+    #[test]
+    fn test_list_mixed_integer_string() {
+        let mut dest = Buffer::new();
+        stringify(
+            &Node::List(vec![Node::Integer(10), Node::Str("x".into())]),
+            &mut dest,
+        )
+        .unwrap();
+        assert_eq!(
+            dest.to_string(),
+            "<list><integer>10</integer><string>x</string></list>"
+        );
+    }
+
+    // --- Dictionary edge cases ---
+
+    #[test]
+    fn test_empty_dictionary() {
+        let mut dest = Buffer::new();
+        stringify(
+            &Node::Dictionary(std::collections::HashMap::new()),
+            &mut dest,
+        )
+        .unwrap();
+        assert_eq!(dest.to_string(), "<dictionary></dictionary>");
+    }
+
+    #[test]
+    fn test_dictionary_integer_value() {
+        let mut dict = std::collections::HashMap::new();
+        dict.insert("count".into(), Node::Integer(7));
+        let mut dest = Buffer::new();
+        stringify(&Node::Dictionary(dict), &mut dest).unwrap();
+        assert_eq!(
+            dest.to_string(),
+            "<dictionary><item><key>count</key><value><integer>7</integer></value></item></dictionary>"
+        );
+    }
+
+    #[test]
+    fn test_dictionary_list_value() {
+        let mut dict = std::collections::HashMap::new();
+        dict.insert(
+            "nums".into(),
+            Node::List(vec![Node::Integer(1), Node::Integer(2)]),
+        );
+        let mut dest = Buffer::new();
+        stringify(&Node::Dictionary(dict), &mut dest).unwrap();
+        let s = dest.to_string();
+        assert!(s.contains("<key>nums</key>"));
+        assert!(s.contains("<list><integer>1</integer><integer>2</integer></list>"));
+    }
+
+    #[test]
+    fn test_nested_dictionary() {
+        let mut inner = std::collections::HashMap::new();
+        inner.insert("x".into(), Node::Integer(9));
+        let mut outer = std::collections::HashMap::new();
+        outer.insert("inner".into(), Node::Dictionary(inner));
+        let mut dest = Buffer::new();
+        stringify(&Node::Dictionary(outer), &mut dest).unwrap();
+        let s = dest.to_string();
+        assert!(s.contains("<key>inner</key>"));
+        assert!(s.contains("<dictionary>"));
+        assert!(s.contains("<integer>9</integer>"));
+    }
+
+    #[test]
+    fn test_dictionary_none_value_produces_empty_value_tag() {
+        let mut dict = std::collections::HashMap::new();
+        dict.insert("k".into(), Node::None);
+        let mut dest = Buffer::new();
+        stringify(&Node::Dictionary(dict), &mut dest).unwrap();
+        assert_eq!(
+            dest.to_string(),
+            "<dictionary><item><key>k</key><value></value></item></dictionary>"
+        );
+    }
+
+    // --- make_node convenience ---
+
+    #[test]
+    fn test_make_node_integer_xml() {
+        let mut dest = Buffer::new();
+        stringify(&make_node(99i64), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<integer>99</integer>");
+    }
+
+    #[test]
+    fn test_make_node_string_xml() {
+        let mut dest = Buffer::new();
+        stringify(&make_node("hello"), &mut dest).unwrap();
+        assert_eq!(dest.to_string(), "<string>hello</string>");
+    }
+
+    // --- Idempotency / consistency ---
+
+    #[test]
+    fn test_stringify_twice_gives_same_result() {
+        let node = Node::List(vec![Node::Integer(1), Node::Str("a".into())]);
+        let mut dest1 = Buffer::new();
+        let mut dest2 = Buffer::new();
+        stringify(&node, &mut dest1).unwrap();
+        stringify(&node, &mut dest2).unwrap();
+        assert_eq!(dest1.to_string(), dest2.to_string());
+    }
 }

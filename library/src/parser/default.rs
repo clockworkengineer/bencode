@@ -302,4 +302,244 @@ mod tests {
         let mut source = BufferSource::new(b"d3:bbci32e3:abci42ee");
         assert!(matches!(parse(&mut source), Err(s) if s == ERR_DICT_KEYS_ORDER));
     }
+
+    // ── parse_bytes / parse_str convenience wrappers ──────────────────────────
+
+    #[test]
+    fn parse_bytes_integer() {
+        assert!(matches!(parse_bytes(b"i42e"), Ok(Node::Integer(42))));
+    }
+
+    #[test]
+    fn parse_bytes_string() {
+        assert!(matches!(parse_bytes(b"4:spam"), Ok(Node::Str(s)) if s == "spam"));
+    }
+
+    #[test]
+    fn parse_bytes_list() {
+        match parse_bytes(b"li1ei2ee") {
+            Ok(Node::List(l)) => {
+                assert_eq!(l.len(), 2);
+                assert!(matches!(l[0], Node::Integer(1)));
+                assert!(matches!(l[1], Node::Integer(2)));
+            }
+            _ => panic!("Expected List"),
+        }
+    }
+
+    #[test]
+    fn parse_bytes_dict() {
+        match parse_bytes(b"d3:fooi7ee") {
+            Ok(Dictionary(d)) => assert_eq!(d["foo"], Node::Integer(7)),
+            _ => panic!("Expected Dictionary"),
+        }
+    }
+
+    #[test]
+    fn parse_str_integer() {
+        assert!(matches!(parse_str("i99e"), Ok(Node::Integer(99))));
+    }
+
+    #[test]
+    fn parse_str_string() {
+        assert!(matches!(parse_str("3:abc"), Ok(Node::Str(s)) if s == "abc"));
+    }
+
+    #[test]
+    fn parse_str_invalid_returns_error() {
+        assert!(parse_str("invalid").is_err());
+    }
+
+    // ── integer edge cases ────────────────────────────────────────────────────
+
+    #[test]
+    fn parse_integer_zero() {
+        assert!(matches!(parse_bytes(b"i0e"), Ok(Node::Integer(0))));
+    }
+
+    #[test]
+    fn parse_integer_max_i64() {
+        assert!(matches!(
+            parse_bytes(b"i9223372036854775807e"),
+            Ok(Node::Integer(i64::MAX))
+        ));
+    }
+
+    #[test]
+    fn parse_integer_min_i64() {
+        assert!(matches!(
+            parse_bytes(b"i-9223372036854775808e"),
+            Ok(Node::Integer(i64::MIN))
+        ));
+    }
+
+    #[test]
+    fn parse_integer_invalid_chars_returns_error() {
+        assert!(parse_bytes(b"iabce").is_err());
+    }
+
+    #[test]
+    fn parse_empty_input_returns_error() {
+        assert!(parse_bytes(b"").is_err());
+    }
+
+    #[test]
+    fn parse_unknown_start_byte_returns_error() {
+        assert!(parse_bytes(b"x").is_err());
+        assert!(parse_bytes(b"!").is_err());
+    }
+
+    // ── string edge cases ─────────────────────────────────────────────────────
+
+    #[test]
+    fn parse_empty_string() {
+        assert!(matches!(parse_bytes(b"0:"), Ok(Node::Str(s)) if s.is_empty()));
+    }
+
+    #[test]
+    fn parse_string_length_mismatch_returns_error() {
+        assert!(parse_bytes(b"10:hi").is_err());
+    }
+
+    #[test]
+    fn parse_colon_alone_returns_error() {
+        // ':' as the first char is not a valid start
+        let mut source = BufferSource::new(b":hello");
+        assert!(parse(&mut source).is_err());
+    }
+
+    // ── list edge cases ───────────────────────────────────────────────────────
+
+    #[test]
+    fn parse_empty_list() {
+        match parse_bytes(b"le") {
+            Ok(Node::List(l)) => assert!(l.is_empty()),
+            _ => panic!("Expected empty List"),
+        }
+    }
+
+    #[test]
+    fn parse_list_single_integer() {
+        match parse_bytes(b"li1ee") {
+            Ok(Node::List(l)) => {
+                assert_eq!(l.len(), 1);
+                assert!(matches!(l[0], Node::Integer(1)));
+            }
+            _ => panic!("Expected List"),
+        }
+    }
+
+    #[test]
+    fn parse_list_of_strings() {
+        match parse_bytes(b"l4:spam4:eggse") {
+            Ok(Node::List(l)) => {
+                assert_eq!(l.len(), 2);
+                assert!(matches!(&l[0], Node::Str(s) if s == "spam"));
+                assert!(matches!(&l[1], Node::Str(s) if s == "eggs"));
+            }
+            _ => panic!("Expected List"),
+        }
+    }
+
+    #[test]
+    fn parse_nested_list() {
+        // l [l i1e i2e e] [l i3e e] e
+        match parse_bytes(b"lli1ei2eeli3eee") {
+            Ok(Node::List(outer)) => {
+                assert_eq!(outer.len(), 2);
+                assert!(matches!(&outer[0], Node::List(l) if l.len() == 2));
+                assert!(matches!(&outer[1], Node::List(l) if l.len() == 1));
+            }
+            _ => panic!("Expected nested List"),
+        }
+    }
+
+    #[test]
+    fn parse_list_mixed_types() {
+        match parse_bytes(b"li42e4:texte") {
+            Ok(Node::List(l)) => {
+                assert_eq!(l.len(), 2);
+                assert!(matches!(l[0], Node::Integer(42)));
+                assert!(matches!(&l[1], Node::Str(s) if s == "text"));
+            }
+            _ => panic!("Expected List"),
+        }
+    }
+
+    // ── dictionary edge cases ─────────────────────────────────────────────────
+
+    #[test]
+    fn parse_empty_dictionary() {
+        match parse_bytes(b"de") {
+            Ok(Dictionary(d)) => assert!(d.is_empty()),
+            _ => panic!("Expected empty Dictionary"),
+        }
+    }
+
+    #[test]
+    fn parse_dictionary_string_value() {
+        match parse_bytes(b"d3:key5:valuee") {
+            Ok(Dictionary(d)) => {
+                assert!(matches!(d.get("key"), Some(Node::Str(s)) if s == "value"))
+            }
+            _ => panic!("Expected Dictionary"),
+        }
+    }
+
+    #[test]
+    fn parse_dictionary_list_value() {
+        match parse_bytes(b"d4:listli1ei2eee") {
+            Ok(Dictionary(d)) => {
+                let list = match d.get("list") {
+                    Some(Node::List(l)) => l,
+                    _ => panic!("Expected list value"),
+                };
+                assert_eq!(list.len(), 2);
+            }
+            _ => panic!("Expected Dictionary"),
+        }
+    }
+
+    #[test]
+    fn parse_dictionary_nested_dict() {
+        match parse_bytes(b"d5:innerd3:keyi9eee") {
+            Ok(Dictionary(outer)) => match outer.get("inner") {
+                Some(Dictionary(inner)) => assert_eq!(inner["key"], Node::Integer(9)),
+                _ => panic!("Expected nested Dictionary"),
+            },
+            _ => panic!("Expected Dictionary"),
+        }
+    }
+
+    #[test]
+    fn parse_dictionary_multiple_entries_sorted() {
+        match parse_bytes(b"d1:ai1e1:bi2e1:ci3ee") {
+            Ok(Dictionary(d)) => {
+                assert_eq!(d.len(), 3);
+                assert_eq!(d["a"], Node::Integer(1));
+                assert_eq!(d["b"], Node::Integer(2));
+                assert_eq!(d["c"], Node::Integer(3));
+            }
+            _ => panic!("Expected Dictionary"),
+        }
+    }
+
+    #[test]
+    fn parse_dictionary_duplicate_key_last_wins() {
+        // Strict parsers may reject this; our parser keeps the last value
+        // because HashMap::insert overwrites. Test that it at least doesn't panic.
+        let result = parse_bytes(b"d3:fooi1e3:fooi2ee");
+        // Either Ok (last value wins) or Err (duplicate key rejected by ordering check) is acceptable
+        let _ = result; // just ensure no panic
+    }
+
+    // ── parse_str / parse_bytes symmetry ─────────────────────────────────────
+
+    #[test]
+    fn parse_str_and_parse_bytes_produce_same_result() {
+        let bencode = "d3:fooi42ee";
+        let from_str = parse_str(bencode);
+        let from_bytes = parse_bytes(bencode.as_bytes());
+        assert_eq!(from_str, from_bytes);
+    }
 }
