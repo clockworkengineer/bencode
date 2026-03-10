@@ -2,11 +2,50 @@
 //! Implements the bencode encoding rules for different node types.
 
 #[cfg(not(feature = "std"))]
-use alloc::{format, string::String, vec::Vec};
+use alloc::{string::String, vec::Vec};
 
-use crate::constants::{BYTE_DICT_START, BYTE_END, BYTE_LIST_START};
+use crate::constants::{BYTE_DICT_START, BYTE_END, BYTE_INTEGER_START, BYTE_LIST_START, BYTE_STRING_SEP};
 use crate::io::traits::IDestination;
 use crate::nodes::node::*;
+
+/// Writes a `u64` as decimal ASCII bytes directly to `destination` (no allocation).
+#[inline]
+fn write_u64(destination: &mut dyn IDestination, mut value: u64) {
+    let mut buf = [0u8; 20];
+    let mut pos = 20usize;
+    loop {
+        pos -= 1;
+        buf[pos] = b'0' + (value % 10) as u8;
+        value /= 10;
+        if value == 0 {
+            break;
+        }
+    }
+    // Safety: buf[pos..] contains only ASCII digit bytes '0'–'9'
+    destination.add_bytes(core::str::from_utf8(&buf[pos..]).unwrap());
+}
+
+/// Writes a `usize` as decimal ASCII bytes directly to `destination` (no allocation).
+#[inline]
+fn write_usize(destination: &mut dyn IDestination, value: usize) {
+    write_u64(destination, value as u64);
+}
+
+/// Writes an `i64` as decimal ASCII bytes directly to `destination` (no allocation).
+#[inline]
+fn write_i64(destination: &mut dyn IDestination, value: i64) {
+    if value < 0 {
+        destination.add_byte(b'-');
+        // i64::MIN cannot be negated in i64; its absolute value is 9223372036854775808
+        if value == i64::MIN {
+            destination.add_bytes("9223372036854775808");
+            return;
+        }
+        write_u64(destination, (-value) as u64);
+    } else {
+        write_u64(destination, value as u64);
+    }
+}
 
 /// Converts a bencode Node into its string representation and writes it to the destination.
 ///
@@ -15,15 +54,17 @@ use crate::nodes::node::*;
 /// * `destination` - The destination to write the string representation to
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
     match node {
-        // Handle integer nodes by formatting as "i<value>e"
+        // Handle integer nodes: write 'i', digits, 'e' without allocation
         Node::Integer(value) => {
-            let s = format!("i{}e", value);
-            destination.add_bytes(s.as_str());
+            destination.add_byte(BYTE_INTEGER_START);
+            write_i64(destination, *value);
+            destination.add_byte(BYTE_END);
         }
-        // Handle string nodes by formatting as "<length>:<value>"
+        // Handle string nodes: write '<length>:<value>' without allocation
         Node::Str(value) => {
-            let s = format!("{}:{}", value.len(), value);
-            destination.add_bytes(s.as_str());
+            write_usize(destination, value.len());
+            destination.add_byte(BYTE_STRING_SEP);
+            destination.add_bytes(value);
         }
         // Handle list nodes by wrapping items with 'l' and 'e' markers
         Node::List(items) => {
@@ -39,7 +80,10 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), 
             let mut sorted: Vec<_> = items.iter().collect();
             sorted.sort_by(|a, b| a.0.cmp(b.0));
             for (key, value) in sorted {
-                stringify(&Node::Str(key.clone()), destination)?;
+                // Inline key encoding — avoids key.clone() + recursive call
+                write_usize(destination, key.len());
+                destination.add_byte(BYTE_STRING_SEP);
+                destination.add_bytes(key);
                 stringify(value, destination)?;
             }
             destination.add_byte(BYTE_END);

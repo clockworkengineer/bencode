@@ -15,27 +15,33 @@ use crate::io::traits::ISource;
 use crate::nodes::node::Node;
 
 /// Parses the length prefix of a bencode string, expecting digits followed by ':'.
-/// Reads characters until ':' is found and converts them to a numeric length.
-///
-/// # Arguments
-/// * `source` - The source containing the string length to parse
-///
-/// # Returns
-/// * `Result<usize, String>` - Parsed length value or error message
+/// Reads characters until ':' is found and accumulates the length as a `usize`
+/// without heap allocation.
 fn parse_string_length(source: &mut dyn ISource) -> Result<usize, String> {
-    let mut length = String::new();
+    let mut length: usize = 0;
+    let mut has_digits = false;
+    let mut found_sep = false;
     while let Some(c) = source.current() {
         if c == STRING_SEP {
             source.next();
+            found_sep = true;
             break;
         }
-        length.push(c);
+        let digit = (c as u8).wrapping_sub(b'0');
+        if digit > 9 {
+            return Err(ERR_INVALID_STRING_LENGTH.to_string());
+        }
+        length = length
+            .checked_mul(10)
+            .and_then(|n| n.checked_add(digit as usize))
+            .ok_or_else(|| ERR_INVALID_STRING_LENGTH.to_string())?;
+        has_digits = true;
         source.next();
     }
-
-    length
-        .parse::<usize>()
-        .map_err(|_| ERR_INVALID_STRING_LENGTH.to_string())
+    if !found_sep || !has_digits {
+        return Err(ERR_INVALID_STRING_LENGTH.to_string());
+    }
+    Ok(length)
 }
 
 /// Parses bencode data from the given source into a Node structure.
@@ -86,27 +92,40 @@ pub fn parse_str(data: &str) -> Result<Node, String> {
 
 /// Parses an integer value from the source, expecting format 'i<number>e'.
 /// Handles both positive and negative integers, rejecting invalid formats like '-0'.
-///
-/// # Arguments
-/// * `source` - The source containing the integer to parse
-///
-/// # Returns
-/// * `Result<Node, String>` - Integer Node or error message
+/// Uses `i128` accumulation to correctly handle all `i64` values without overflow.
 fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
     source.next(); // skip 'i'
-    let mut number = String::new();
+    let negative = source.current() == Some('-');
+    // skip optional sign prefix ('+' or '-')
+    if negative || source.current() == Some('+') {
+        source.next();
+    }
+    let mut value: i128 = 0;
+    let mut has_digits = false;
     while let Some(c) = source.current() {
         if c == END_MARKER {
             source.next();
-            if number == "-0" {
+            if !has_digits {
                 return Err(ERR_INVALID_INTEGER.to_string());
             }
-            return number
-                .parse::<i64>()
-                .map(Node::Integer)
-                .map_err(|_| ERR_INVALID_INTEGER.to_string());
+            if negative && value == 0 {
+                return Err(ERR_INVALID_INTEGER.to_string()); // reject -0
+            }
+            let result = if negative { -value } else { value };
+            if result < i64::MIN as i128 || result > i64::MAX as i128 {
+                return Err(ERR_INVALID_INTEGER.to_string());
+            }
+            return Ok(Node::Integer(result as i64));
         }
-        number.push(c);
+        let digit = (c as u8).wrapping_sub(b'0');
+        if digit > 9 {
+            return Err(ERR_INVALID_INTEGER.to_string());
+        }
+        value = value
+            .checked_mul(10)
+            .and_then(|n| n.checked_add(digit as i128))
+            .ok_or_else(|| ERR_INVALID_INTEGER.to_string())?;
+        has_digits = true;
         source.next();
     }
     Err(ERR_UNTERMINATED_INTEGER.to_string())
@@ -121,8 +140,9 @@ fn parse_integer(source: &mut dyn ISource) -> Result<Node, String> {
 /// # Returns
 /// * `Result<Node, String>` - String Node or error message
 fn parse_string(source: &mut dyn ISource) -> Result<Node, String> {
+    let len = parse_string_length(source)?;
     let mut string = String::new();
-    for _ in 0..parse_string_length(source)? {
+    for _ in 0..len {
         if let Some(c) = source.current() {
             string.push(c);
             source.next();
