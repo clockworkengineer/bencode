@@ -14,13 +14,9 @@ use alloc::{
 };
 
 use crate::error::messages::*;
+use crate::constants::{BYTE_DICT_START, BYTE_END, BYTE_INTEGER_START, BYTE_LIST_START, BYTE_STRING_SEP};
 use crate::nodes::borrowed::BorrowedNode;
 
-const BENCODE_INTEGER_START: u8 = b'i';
-const BENCODE_LIST_START: u8 = b'l';
-const BENCODE_DICTIONARY_START: u8 = b'd';
-const BENCODE_END: u8 = b'e';
-const BENCODE_STRING_DELIMITER: u8 = b':';
 
 /// Parses bencode data from a byte slice without allocation, returning borrowed nodes.
 ///
@@ -55,9 +51,9 @@ fn parse_node<'a>(input: &'a [u8], position: &mut usize) -> Result<BorrowedNode<
     }
 
     match input[*position] {
-        BENCODE_INTEGER_START => parse_integer(input, position),
-        BENCODE_LIST_START => parse_list(input, position),
-        BENCODE_DICTIONARY_START => parse_dictionary(input, position),
+        BYTE_INTEGER_START => parse_integer(input, position),
+        BYTE_LIST_START => parse_list(input, position),
+        BYTE_DICT_START => parse_dictionary(input, position),
         b'0'..=b'9' => parse_bytes(input, position),
         c => Err(unexpected_character(c as char)),
     }
@@ -71,7 +67,7 @@ fn parse_integer<'a>(input: &'a [u8], position: &mut usize) -> Result<BorrowedNo
     let mut end = start;
 
     // Find the end marker
-    while end < input.len() && input[end] != BENCODE_END {
+    while end < input.len() && input[end] != BYTE_END {
         end += 1;
     }
 
@@ -97,7 +93,7 @@ fn parse_bytes<'a>(input: &'a [u8], position: &mut usize) -> Result<BorrowedNode
     let mut end = start;
 
     // Find the colon delimiter
-    while end < input.len() && input[end] != BENCODE_STRING_DELIMITER {
+    while end < input.len() && input[end] != BYTE_STRING_SEP {
         end += 1;
     }
 
@@ -134,7 +130,7 @@ fn parse_list<'a>(input: &'a [u8], position: &mut usize) -> Result<BorrowedNode<
 
     let mut list = Vec::new();
 
-    while *position < input.len() && input[*position] != BENCODE_END {
+    while *position < input.len() && input[*position] != BYTE_END {
         let node = parse_node(input, position)?;
         list.push(node);
     }
@@ -154,7 +150,7 @@ fn parse_dictionary<'a>(input: &'a [u8], position: &mut usize) -> Result<Borrowe
     let mut dict = HashMap::new();
     let mut last_key: Option<&[u8]> = None;
 
-    while *position < input.len() && input[*position] != BENCODE_END {
+    while *position < input.len() && input[*position] != BYTE_END {
         // Parse key (must be a byte string)
         let key_node = parse_node(input, position)?;
         let key = match key_node {
@@ -222,9 +218,9 @@ fn validate_node(input: &[u8], position: &mut usize) -> Result<(), String> {
     }
 
     match input[*position] {
-        BENCODE_INTEGER_START => validate_integer(input, position),
-        BENCODE_LIST_START => validate_list(input, position),
-        BENCODE_DICTIONARY_START => validate_dictionary(input, position),
+        BYTE_INTEGER_START => validate_integer(input, position),
+        BYTE_LIST_START => validate_list(input, position),
+        BYTE_DICT_START => validate_dictionary(input, position),
         b'0'..=b'9' => validate_bytes(input, position),
         c => Err(unexpected_character(c as char)),
     }
@@ -236,7 +232,7 @@ fn validate_integer(input: &[u8], position: &mut usize) -> Result<(), String> {
     let start = *position;
     let mut end = start;
 
-    while end < input.len() && input[end] != BENCODE_END {
+    while end < input.len() && input[end] != BYTE_END {
         end += 1;
     }
 
@@ -259,7 +255,7 @@ fn validate_bytes(input: &[u8], position: &mut usize) -> Result<(), String> {
     let start = *position;
     let mut end = start;
 
-    while end < input.len() && input[end] != BENCODE_STRING_DELIMITER {
+    while end < input.len() && input[end] != BYTE_STRING_SEP {
         end += 1;
     }
 
@@ -288,7 +284,7 @@ fn validate_bytes(input: &[u8], position: &mut usize) -> Result<(), String> {
 fn validate_list(input: &[u8], position: &mut usize) -> Result<(), String> {
     *position += 1; // Skip 'l'
 
-    while *position < input.len() && input[*position] != BENCODE_END {
+    while *position < input.len() && input[*position] != BYTE_END {
         validate_node(input, position)?;
     }
 
@@ -307,7 +303,7 @@ fn validate_dictionary(input: &[u8], position: &mut usize) -> Result<(), String>
     let mut last_key_len = 0;
     let mut first_key = true;
 
-    while *position < input.len() && input[*position] != BENCODE_END {
+    while *position < input.len() && input[*position] != BYTE_END {
         // Validate key is a byte string
         if !matches!(input[*position], b'0'..=b'9') {
             return Err(ERR_DICT_KEY_MUST_BE_STRING.to_string());
@@ -316,7 +312,7 @@ fn validate_dictionary(input: &[u8], position: &mut usize) -> Result<(), String>
         // Parse the key to extract the actual bytes
         let len_start = *position;
         let mut len_end = len_start;
-        while len_end < input.len() && input[len_end] != BENCODE_STRING_DELIMITER {
+        while len_end < input.len() && input[len_end] != BYTE_STRING_SEP {
             len_end += 1;
         }
 

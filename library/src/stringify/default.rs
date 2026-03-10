@@ -4,6 +4,7 @@
 #[cfg(not(feature = "std"))]
 use alloc::{format, string::String, vec::Vec};
 
+use crate::constants::{BYTE_DICT_START, BYTE_END, BYTE_LIST_START};
 use crate::io::traits::IDestination;
 use crate::nodes::node::*;
 
@@ -26,22 +27,22 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), 
         }
         // Handle list nodes by wrapping items with 'l' and 'e' markers
         Node::List(items) => {
-            destination.add_byte(b'l');
+            destination.add_byte(BYTE_LIST_START);
             for item in items {
                 stringify(item, destination)?;
             }
-            destination.add_byte(b'e');
+            destination.add_byte(BYTE_END);
         }
         // Handle dictionary nodes by wrapping sorted key-value pairs with 'd' and 'e' markers
         Node::Dictionary(items) => {
-            destination.add_byte(b'd');
+            destination.add_byte(BYTE_DICT_START);
             let mut sorted: Vec<_> = items.iter().collect();
             sorted.sort_by(|a, b| a.0.cmp(b.0));
             for (key, value) in sorted {
                 stringify(&Node::Str(key.clone()), destination)?;
                 stringify(value, destination)?;
             }
-            destination.add_byte(b'e');
+            destination.add_byte(BYTE_END);
         }
         // Skip None nodes as they don't have a string representation
         Node::None => {

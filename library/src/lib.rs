@@ -24,6 +24,8 @@ pub mod error;
 pub mod io;
 /// Module containing utility functions and helper methods
 pub mod misc;
+/// Centralized bencode protocol character and byte constants
+pub(crate) mod constants;
 
 /// Module containing configuration options for parsing and encoding
 pub mod config;

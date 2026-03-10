@@ -12,6 +12,7 @@ use alloc::{
 
 use crate::HashMap;
 use crate::Node::Dictionary;
+use crate::constants::{DICT_START, END_MARKER, INTEGER_START, LIST_START, STRING_SEP};
 use crate::error::messages::*;
 use crate::io::traits::ISource;
 use crate::nodes::node::Node;
@@ -35,22 +36,11 @@ enum ParseState {
     },
 }
 
-/// Start marker for bencode integer values ('i')
-const INTEGER_START: char = 'i';
-/// End marker for bencode values ('e')
-const END_MARKER: char = 'e';
-/// Start marker for bencode list values ('l')
-const LIST_START: char = 'l';
-/// Start marker for bencode dictionary values ('d')
-const DICT_START: char = 'd';
-/// Separator between string length and content (':')
-const STRING_SEPARATOR: char = ':';
-
 /// Parses the length prefix of a bencode string.
 fn parse_string_length(source: &mut dyn ISource) -> Result<usize, String> {
     let mut length = String::new();
     while let Some(c) = source.current() {
-        if c == STRING_SEPARATOR {
+        if c == STRING_SEP {
             source.next();
             break;
         }
@@ -153,7 +143,7 @@ pub fn parse_iterative(source: &mut dyn ISource) -> Result<Node, String> {
                     Some('0'..='9') => {
                         value_stack.push(parse_string(source)?);
                     }
-                    Some(STRING_SEPARATOR) => {
+                    Some(STRING_SEP) => {
                         return Err(ERR_INVALID_STRING_LENGTH.to_string());
                     }
                     Some(c) => {
