@@ -18,14 +18,14 @@ pub(crate) use alloc::collections::BTreeMap as HashMap;
 #[cfg(feature = "std")]
 pub(crate) use std::collections::HashMap;
 
+/// Centralized bencode protocol character and byte constants
+pub(crate) mod constants;
 /// Module defining custom error types and error handling functionality
 pub mod error;
 /// Module providing input/output operations for reading and writing bencode data
 pub mod io;
 /// Module containing utility functions and helper methods
 pub mod misc;
-/// Centralized bencode protocol character and byte constants
-pub(crate) mod constants;
 
 /// Module containing configuration options for parsing and encoding
 pub mod config;
