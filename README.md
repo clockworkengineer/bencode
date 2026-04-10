@@ -1,227 +1,136 @@
-# Bencode Library Examples
+# bencode_lib
 
-This directory contains comprehensive examples demonstrating the functionality of the bencode library. Each example focuses on specific features and use cases.
+A Rust library for parsing, constructing, and converting Bencode data. Designed for embedded systems, resource-constrained environments, and general-purpose use. Supports round-tripping Bencode and conversion to JSON, YAML, XML, and TOML.
 
-## Overview of Examples
+[![Repository](https://img.shields.io/badge/github-clockworkengineer%2Fbencode-blue)](https://github.com/clockworkengineer/bencode)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Rust Edition](https://img.shields.io/badge/edition-2024-orange)](library/Cargo.toml)
 
-### 1. **bencode_node_api** - Node API Usage
-Demonstrates the Node API's type checking, accessor methods, and utility functions.
+## Features
 
-**Key Features:**
-- Type checking methods (`is_integer()`, `is_string()`, `is_list()`, `is_dictionary()`, `is_none()`)
-- Value accessors (`as_integer()`, `as_string()`, `as_list()`, `as_dictionary()`)
-- Dictionary access methods (`get()`, `get_mut()`)
-- Utility methods (`len()`, `is_empty()`, `type_name()`)
-- Display trait formatting
+- Parse Bencode into a typed tree (`Node`)
+- Serialize `Node` back to canonical Bencode
+- Convert `Node` to JSON, YAML, XML, or TOML (optional Cargo features)
+- Zero-copy borrowed parsing via `BorrowedNode` — no heap allocation
+- `no_std` compatible (disable the default `std` feature)
+- Memory pool / arena allocation (`Arena`, `StackBuffer`, `MemoryTracker`)
+- Stack-based iterative parser — safe for deeply nested structures
+- Validation helpers for ergonomic field extraction (`get_required`, `get_int_required`, …)
+- Configurable parsing depth (`ParserConfig`) and canonicalisation enforcement (`EncoderConfig`)
+- Read/write from files or in-memory buffers
 
-**Run:**
-```bash
-cargo run --package bencode_node_api
-```
+## Installation
 
-## Library Installation
 Add to your `Cargo.toml`:
-```toml
-[dependencies]
-bencode_lib = { path = "library" }
-```
-Or use the published version:
+
 ```toml
 [dependencies]
 bencode_lib = "0.2.0"
 ```
 
-## Quick examples
+Or as a path dependency within this workspace:
 
-### 2. **bencode_in_memory** - In-Memory Operations
-Shows how to work with bencode data in memory without file I/O.
-
-**Key Features:**
-- Convenience functions (`parse_bytes()`, `parse_str()`, `stringify_to_string()`, `stringify_to_bytes()`)
-- BufferSource and BufferDestination usage
-- Round-trip conversions
-- Binary data handling
-
-**Run:**
-```bash
-cargo run --package bencode_in_memory
+```toml
+[dependencies]
+bencode_lib = { path = "library" }
 ```
 
-### 3. **bencode_dictionary_ops** - Dictionary Manipulation
-Comprehensive guide to creating, querying, and modifying dictionary nodes.
+To minimise binary size, disable unused format-conversion features:
 
-**Key Features:**
-- Multiple dictionary creation methods
-- Safe value querying
-- Modifying dictionary contents
-- Iterating through dictionaries
-- Nested dictionary operations
-- Building torrent metadata structures
-
-**Run:**
-```bash
-cargo run --package bencode_dictionary_ops
+```toml
+[dependencies]
+bencode_lib = { version = "0.2.0", default-features = false, features = ["std", "json"] }
 ```
 
-### 4. **bencode_list_ops** - List Operations
-Demonstrates list creation, modification, iteration, and transformations.
+Available features: `std` (default), `json`, `toml`, `xml`, `yaml`.
 
-**Key Features:**
-- Various list creation methods
-- Element access patterns
-- List modifications (push, insert, remove, clear)
-- Filtering and iteration
-- Transformations (map, filter, collect)
-- Nested list operations
-- Practical use cases (tracker lists, file paths, tags)
+## Release Builds & LTO for Optimal Size
 
-**Run:**
-```bash
-cargo run --package bencode_list_ops
+For the smallest and fastest binaries, enable Link Time Optimization (LTO):
+
+```toml
+[profile.release]
+lto = true
 ```
 
-### 5. **bencode_error_handling** - Error Handling
-Shows proper error handling patterns when working with bencode data.
+Then build with:
 
-**Key Features:**
-- Parsing error scenarios
-- File I/O error handling
-- Type mismatch handling
-- Data validation strategies
-- Error recovery patterns
-
-**Run:**
-```bash
-cargo run --package bencode_error_handling
+```sh
+cargo build --release
 ```
 
-### 6. **bencode_format_conversions** - Format Conversions
-Demonstrates converting bencode to various output formats.
+## Quick Examples
 
-**Key Features:**
-- Conversion to JSON, TOML, XML, and YAML
-- Simple and complex structure conversions
-- Format size comparison
-- Torrent metadata conversion
-- Round-trip bencode conversions
-
-**Run:**
-```bash
-cargo run --package bencode_format_conversions
-```
-
-### 7. **bencode_create_at_runtime** - Dynamic Structure Creation
-Shows how to build complex bencode structures programmatically at runtime.
-
-**Key Features:**
-- Building nested dictionaries
-- Creating complex torrent-like structures
-- Multi-level nesting patterns
-
-**Run:**
-```bash
-cargo run --package bencode_create_at_runtime
-```
-
-### 8. **bencode_fibonacci** - Stateful File Operations
-A practical example maintaining a Fibonacci sequence in a bencode file.
-
-**Key Features:**
-- Reading bencode files
-- Modifying data structures
-- Writing back to files
-- Stateful application pattern
-
-**Run:**
-```bash
-cargo run --package bencode_fibonacci
-```
-
-### 9. **bencode_read_torrent_files** - Reading Torrent Files
-Demonstrates parsing and displaying torrent file metadata.
-
-**Key Features:**
-- Opening .torrent files
-- Parsing torrent metadata
-- Extracting specific fields
-- Error handling for malformed files
-
-**Run:**
-```bash
-cargo run --package bencode_read_torrent_files
-```
-
-### 10. **bencode_torrent_to_json** - Torrent to JSON Conversion
-Converts torrent files to JSON format.
-
-**Run:**
-```bash
-cargo run --package bencode_torrent_to_json
-```
-
-### 11. **bencode_torrent_to_toml** - Torrent to TOML Conversion
-Converts torrent files to TOML format.
-
-**Run:**
-```bash
-cargo run --package bencode_torrent_to_toml
-```
-
-### 12. **bencode_torrent_to_xml** - Torrent to XML Conversion
-Converts torrent files to XML format.
-
-**Run:**
-```bash
-cargo run --package bencode_torrent_to_xml
-```
-
-### 13. **bencode_torrent_to_yaml** - Torrent to YAML Conversion
-Converts torrent files to YAML format.
-
-**Run:**
-```bash
-cargo run --package bencode_torrent_to_yaml
-```
-
-## Quick Start
-
-To run all examples:
-
-```bash
-# From the root directory
-cargo build --workspace
-
-# Run a specific example
-cargo run --package <example-name>
-```
-
-## Learning Path
-
-If you're new to the library, we recommend going through the examples in this order:
-
-1. **bencode_node_api** - Learn the fundamental Node API
-2. **bencode_in_memory** - Understand parsing and stringifying
-3. **bencode_dictionary_ops** - Master dictionary operations
-4. **bencode_list_ops** - Master list operations
-5. **bencode_error_handling** - Learn proper error handling
-6. **bencode_format_conversions** - Explore output formats
-7. **bencode_create_at_runtime** - Build complex structures
-8. **bencode_fibonacci** - See a stateful application
-9. **bencode_read_torrent_files** - Work with real torrent files
-
-## Common Patterns
-
-### Parsing Bencode Data
+### Parse a `.torrent` file and convert to YAML
 
 ```rust
-use bencode_lib::{parse_bytes, parse_str};
+use bencode_lib::{FileSource, FileDestination, parse, to_yaml};
 
-// From byte slice
-let node = parse_bytes(b"i42e")?;
-
-// From string slice
-let node = parse_str("4:test")?;
+let mut src = FileSource::new("example.torrent")?;
+let node = parse(&mut src)?;
+let mut dst = FileDestination::new("example.yaml")?;
+to_yaml(&node, &mut dst);
 ```
+
+### Round-trip a Bencode buffer
+
+```rust
+use bencode_lib::{parse_bytes, stringify_to_bytes};
+
+let raw = b"d3:foo3:bar4:spamli1ei2ei3eee";
+let node = parse_bytes(raw)?;
+let encoded = stringify_to_bytes(&node);
+assert_eq!(raw.as_slice(), encoded.as_slice());
+```
+
+### Construct a `Node` and render as JSON
+
+```rust
+use bencode_lib::{Node, make_node, to_json, BufferDestination};
+use std::collections::HashMap;
+
+// Using the From trait with an array of key-value pairs
+let node = Node::from([
+    ("name", Node::from("hello")),
+    ("count", Node::from(42_i64)),
+]);
+let mut dst = BufferDestination::new();
+to_json(&node, &mut dst);
+```
+
+### Convenience parse/stringify functions
+
+```rust
+use bencode_lib::{parse_str, parse_bytes, stringify_to_string, stringify_to_bytes};
+
+let node = parse_str("i42e")?;
+let node = parse_bytes(b"4:spam")?;
+
+let s: String = stringify_to_string(&node);
+let b: Vec<u8> = stringify_to_bytes(&node);
+```
+
+### Validate and extract fields ergonomically
+
+```rust
+use bencode_lib::parse_bytes;
+
+let node = parse_bytes(b"d4:name5:Alice3:agei30ee")?;
+let name: &str = node.get_string_required("name")?;
+let age:  i64  = node.get_int_required("age")?;
+```
+
+## Data Model
+
+```
+Node::Integer(i64)                  — Bencode integer
+Node::Str(String)                   — Bencode string (UTF-8)
+Node::List(Vec<Node>)               — Bencode list
+Node::Dictionary(HashMap<String, Node>) — Bencode dictionary
+Node::None                          — Empty / uninitialized node
+```
+
+Nodes implement `Clone`, `Debug`, `PartialEq`, and `Display`.
 
 ### Creating Nodes
 
@@ -229,79 +138,202 @@ let node = parse_str("4:test")?;
 use bencode_lib::{Node, make_node};
 use std::collections::HashMap;
 
-// Integer
-let int_node = Node::Integer(42);
+// Direct variants
+let i = Node::Integer(42);
+let s = Node::Str("hello".to_string());
+let l = Node::List(vec![Node::Integer(1), Node::Integer(2)]);
 
-// String
-let str_node = Node::Str("hello".to_string());
+// Via the generic helper (uses From conversions)
+let n = make_node(99_i64);          // -> Node::Integer(99)
+let n = make_node("world");         // -> Node::Str("world")
+let n = make_node(vec![1_i64, 2]);  // -> Node::List([Integer(1), Integer(2)])
 
-// List using make_node
-let list = make_node(vec![make_node(1), make_node(2)]);
+// Array literal short-hand (no heap for the init array)
+let list = Node::from([1_i64, 2, 3]);
+let dict = Node::from([("key", Node::Integer(1))]);
 
-// Dictionary
-let mut dict = HashMap::new();
-dict.insert("key".to_string(), make_node("value"));
-let dict_node = Node::Dictionary(dict);
+// HashMap dictionary
+let mut map = HashMap::new();
+map.insert("k".to_string(), make_node("v"));
+let dict = Node::from(map);
 ```
 
-### Type Checking and Access
+## API Reference
+
+### Parsing
+
+| Function | Description |
+|---|---|
+| `parse(&mut src)` | Parse from any `Source` (file or buffer) |
+| `parse_bytes(data: &[u8])` | Parse directly from a byte slice |
+| `parse_str(data: &str)` | Parse directly from a string slice |
+| `parse_iterative(&mut src)` | Stack-based iterative parse (deep nesting safe) |
+| `parse_bytes_iterative(data)` | Iterative parse from byte slice |
+| `parse_str_iterative(data)` | Iterative parse from string slice |
+| `parse_borrowed(data: &[u8])` | Zero-copy parse returning `BorrowedNode` (no alloc) |
+| `validate_bencode(data: &[u8])` | Validate without building a node tree |
+
+All parsers return `Result<Node, BencodeError>` (or `Result<BorrowedNode, BencodeError>` for the borrowed variant).
+
+### Stringifying
+
+| Function | Description |
+|---|---|
+| `stringify(&node, &mut dst)` | Write canonical Bencode to any `Destination` |
+| `stringify_to_bytes(&node)` | Return Bencode as `Vec<u8>` |
+| `stringify_to_string(&node)` | Return Bencode as `String` |
+| `to_json(&node, &mut dst)` | Convert to JSON (`json` feature) |
+| `to_toml(&node, &mut dst)` | Convert to TOML (`toml` feature) |
+| `to_xml(&node, &mut dst)` | Convert to XML (`xml` feature) |
+| `to_yaml(&node, &mut dst)` | Convert to YAML (`yaml` feature) |
+
+### I/O Sources & Destinations
+
+| Type | Description |
+|---|---|
+| `BufferSource` | Read Bencode from an in-memory buffer |
+| `FileSource` | Read Bencode from a file (`std` feature) |
+| `BufferDestination` | Write Bencode/format output to an in-memory buffer |
+| `FileDestination` | Write Bencode/format output to a file (`std` feature) |
+
+### Node Methods
+
+**Type checking:** `is_integer()`, `is_string()`, `is_list()`, `is_dictionary()`, `is_none()`
+
+**Value access:** `as_integer()`, `as_string()`, `as_list()`, `as_list_mut()`, `as_dictionary()`, `as_dictionary_mut()`
+
+**Dictionary access:** `get(key)`, `get_mut(key)`
+
+**Validation helpers:**
+
+| Method | Returns |
+|---|---|
+| `get_required(key)` | `Result<&Node, String>` |
+| `get_int_required(key)` | `Result<i64, String>` |
+| `get_string_required(key)` | `Result<&str, String>` |
+| `get_list_required(key)` | `Result<&Vec<Node>, String>` |
+| `get_dict_required(key)` | `Result<&HashMap<String, Node>, String>` |
+| `get_int_optional(key)` | `Option<i64>` |
+| `get_string_optional(key)` | `Option<&str>` |
+| `get_list_optional(key)` | `Option<&Vec<Node>>` |
+| `get_dict_optional(key)` | `Option<&HashMap<String, Node>>` |
+
+**Utility:** `len()`, `is_empty()`, `type_name()`
+
+### Embedded / `no_std` API
+
+| Type / Function | Description |
+|---|---|
+| `Arena` | Bump allocator from a fixed buffer |
+| `StackBuffer<N>` | Stack-allocated byte buffer |
+| `MemoryTracker` | Allocation accounting for embedded systems |
+| `FixedSizeBuffer<N>` | Stack-allocated fixed-size buffer with compile-time size checks |
+| `MemoryBounds` | Const-generic memory bounds calculator |
+| `BorrowedNode` | Zero-copy borrowed node (no heap allocation) |
+| `parse_borrowed(data)` | Zero-copy parser |
+| `validate_bencode(data)` | Validator without allocation |
+
+### Configuration
 
 ```rust
-if node.is_integer() {
-    if let Some(value) = node.as_integer() {
-        println!("Integer: {}", value);
-    }
-}
+use bencode_lib::{ParserConfig, EncoderConfig};
 
-if let Some(dict) = node.as_dictionary() {
-    for (key, value) in dict {
-        println!("{}: {}", key, value);
-    }
-}
+let parser = ParserConfig::new().with_max_depth(50);   // default: 100
+
+let encoder = EncoderConfig::new()
+    .with_canonical(true)               // enforce sorted dict keys, no leading zeros
+    .with_dict_order_verification(true);
 ```
 
-### Converting to Different Formats
+### Utilities
+
+| Function | Description |
+|---|---|
+| `version()` | Returns the library version string |
+| `read_file(path)` | Read a file to `String` (`std` feature) – returns `Result<String, io::Error>` |
+| `write_file(path, content)` | Write a string to a file (`std` feature) – returns `Result<(), io::Error>` |
+
+## Error Handling
+
+`BencodeError` is a lightweight, allocation-free enum suitable for `no_std` environments:
 
 ```rust
-use bencode_lib::{to_json, to_yaml, to_xml, to_toml, BufferDestination};
-
-let mut dest = BufferDestination::new();
-to_json(&node, &mut dest);
-println!("{}", String::from_utf8_lossy(&dest.buffer));
+pub enum BencodeError {
+    EmptyInput,
+    InvalidInteger,
+    UnterminatedInteger,
+    InvalidStringLength,
+    StringTooShort,
+    UnterminatedList,
+    UnterminatedDictionary,
+    DictKeysOutOfOrder,
+    DictKeyMustBeString,
+    UnexpectedCharacter(char),
+    FileNotFound,
+    IoError,
+}
 ```
 
+Each variant has a numeric `.code()` for compact logging and a static `.as_str()` for human-readable messages. In `std` environments, `BencodeError` implements `std::error::Error`.
 
-## Size & Performance Best Practices
+> **Note:** `read_file` / `write_file` return `std::io::Error`, not `BencodeError`.
 
-- **Disable unused features**: In your Cargo.toml, use `default-features = false` and only enable what you need for minimal binary size.
-- **Enable LTO and release builds**: Add `[profile.release] lto = true` and always build with `--release`.
-- **Use zero-copy parsing**: Prefer `parse_borrowed()` for memory efficiency and speed.
-- **Stack-allocated buffers**: Use `FixedSizeBuffer<N>` for predictable, compile-time checked stack allocation.
-- **Iterative parsing**: Use `parse_iterative` for deeply nested data to avoid stack overflows.
-- **Lightweight error handling**: Use `BencodeError` for no-heap, deterministic error handling in embedded/size-sensitive builds.
-- **Memory pools/arenas**: Use `Arena` and `MemoryTracker` for predictable, batch allocation and memory tracking.
+## Stack-Allocated Buffers & Compile-Time Memory Safety
 
-See the `REFRACTOR_PLAN.md` and the library README for more details and rationale.
+For embedded or size-sensitive applications, use `FixedSizeBuffer<N>` to allocate buffers on the stack with compile-time size checks:
 
-- Use `make_node()` for convenient node creation
-- Always check types before accessing values
-- Use pattern matching for safe value extraction
-- Remember that dictionaries are unordered in bencode
-- BufferDestination is great for in-memory operations
-- FileSource/FileDestination for file I/O
+```rust
+use bencode_lib::FixedSizeBuffer;
 
-## Contributing
+let mut buf = FixedSizeBuffer::<1024>::new();
+```
 
-Feel free to add more examples! When creating new examples:
+See `examples/bencode_const_generics` for practical usage.
 
-1. Create a new directory under `examples/`
-2. Add a `Cargo.toml` with dependency on the bencode library
-3. Document the example's purpose and key features
-4. Add it to the workspace members in the root `Cargo.toml`
-5. Update this README with a description
+## Minimum Supported Rust Version
 
-## Resources
+Rust **1.85.0** (edition 2024).
 
-- [Library Documentation](../library/README.md)
-- [API Reference](../library/src/lib.rs)
-- [Bencode Specification](https://en.wikipedia.org/wiki/Bencode)
+## Examples
+
+The `examples/` directory contains 23 self-contained programs covering every major use case:
+
+| Example | Topic |
+|---|---|
+| `bencode_node_api` | Node type checking, accessors, and display |
+| `bencode_in_memory` | `parse_bytes` / `parse_str` / `stringify_to_*` convenience functions |
+| `bencode_dictionary_ops` | Creating, querying, and modifying dictionaries |
+| `bencode_list_ops` | List creation, modification, iteration, transformations |
+| `bencode_error_handling` | Error scenarios and recovery patterns |
+| `bencode_format_conversions` | JSON / TOML / XML / YAML output |
+| `bencode_create_at_runtime` | Building nested structures programmatically |
+| `bencode_fibonacci` | Stateful file read/modify/write pattern |
+| `bencode_read_torrent_files` | Parsing real `.torrent` files |
+| `bencode_torrent_to_{json,toml,xml,yaml}` | Single-file torrent conversion examples |
+| `bencode_zerocopy` | Zero-copy `BorrowedNode` parsing |
+| `bencode_memory_pool` | Arena allocation |
+| `bencode_const_generics` | Compile-time stack buffers |
+| `bencode_minimal` | Smallest possible binary |
+| `bencode_full` | Full feature showcase |
+| `bencode_iterative` | Iterative parser for deep nesting |
+| `bencode_lightweight_errors` | Lightweight `BencodeError` usage |
+| `bencode_validation` | `validate_bencode` without building a tree |
+
+Run any example with:
+
+```sh
+cargo run --package <example-name>
+```
+
+See [`examples/README.md`](examples/README.md) for full descriptions and a recommended learning path.
+
+## Documentation
+
+- [`docs/API_OVERVIEW.md`](docs/API_OVERVIEW.md) — API reference
+- [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md) — contributing and project structure
+- [`docs/EMBEDDED_GUIDE.md`](docs/EMBEDDED_GUIDE.md) — `no_std` / embedded usage
+- [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — release history
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
