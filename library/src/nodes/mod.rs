@@ -17,3 +17,7 @@ pub mod borrowed;
 
 /// Fixed-capacity node implementation using const generics
 pub mod fixed;
+
+/// Schema validation and field querying extension trait
+pub mod query;
+

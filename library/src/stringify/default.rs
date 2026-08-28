@@ -5,12 +5,13 @@
 use alloc::{string::String, vec::Vec};
 
 use crate::constants::{BYTE_DICT_START, BYTE_END, BYTE_INTEGER_START, BYTE_LIST_START, BYTE_STRING_SEP};
-use crate::io::traits::IDestination;
+use crate::io::traits::{BencodeWrite, IDestination};
 use crate::nodes::node::*;
+use crate::stringify::visitor::{BencodeVisitable, BencodeVisitor};
 
-/// Writes a `u64` as decimal ASCII bytes directly to `destination` (no allocation).
+/// Writes a `u64` as decimal ASCII bytes directly to `writer` (no allocation).
 #[inline]
-fn write_u64(destination: &mut dyn IDestination, mut value: u64) {
+fn write_u64_write(writer: &mut (impl BencodeWrite + ?Sized), mut value: u64) {
     let mut buf = [0u8; 20];
     let mut pos = 20usize;
     loop {
@@ -21,29 +22,88 @@ fn write_u64(destination: &mut dyn IDestination, mut value: u64) {
             break;
         }
     }
-    // Safety: buf[pos..] contains only ASCII digit bytes '0'–'9'
-    destination.add_bytes(core::str::from_utf8(&buf[pos..]).unwrap());
+    writer.write_bytes(&buf[pos..]);
 }
 
-/// Writes a `usize` as decimal ASCII bytes directly to `destination` (no allocation).
+/// Writes a `usize` as decimal ASCII bytes directly to `writer` (no allocation).
 #[inline]
-fn write_usize(destination: &mut dyn IDestination, value: usize) {
-    write_u64(destination, value as u64);
+fn write_usize_write(writer: &mut (impl BencodeWrite + ?Sized), value: usize) {
+    write_u64_write(writer, value as u64);
 }
 
-/// Writes an `i64` as decimal ASCII bytes directly to `destination` (no allocation).
+/// Writes an `i64` as decimal ASCII bytes directly to `writer` (no allocation).
 #[inline]
-fn write_i64(destination: &mut dyn IDestination, value: i64) {
+fn write_i64_write(writer: &mut (impl BencodeWrite + ?Sized), value: i64) {
     if value < 0 {
-        destination.add_byte(b'-');
-        // i64::MIN cannot be negated in i64; its absolute value is 9223372036854775808
+        writer.write_byte(b'-');
         if value == i64::MIN {
-            destination.add_bytes("9223372036854775808");
+            writer.write_bytes(b"9223372036854775808");
             return;
         }
-        write_u64(destination, (-value) as u64);
+        write_u64_write(writer, (-value) as u64);
     } else {
-        write_u64(destination, value as u64);
+        write_u64_write(writer, value as u64);
+    }
+}
+
+/// Bencode format serializer implementing the `BencodeVisitor` pattern.
+pub struct BencodeEncoder<'a, W: BencodeWrite + ?Sized> {
+    writer: &'a mut W,
+}
+
+impl<'a, W: BencodeWrite + ?Sized> BencodeEncoder<'a, W> {
+    /// Creates a new BencodeEncoder writing to the provided destination.
+    pub fn new(writer: &'a mut W) -> Self {
+        Self { writer }
+    }
+}
+
+impl<'a, W: BencodeWrite + ?Sized> BencodeVisitor for BencodeEncoder<'a, W> {
+    type Error = String;
+
+    fn visit_integer(&mut self, value: i64) -> Result<(), Self::Error> {
+        self.writer.write_byte(BYTE_INTEGER_START);
+        write_i64_write(self.writer, value);
+        self.writer.write_byte(BYTE_END);
+        Ok(())
+    }
+
+    fn visit_string(&mut self, value: &str) -> Result<(), Self::Error> {
+        write_usize_write(self.writer, value.len());
+        self.writer.write_byte(BYTE_STRING_SEP);
+        self.writer.write_bytes(value.as_bytes());
+        Ok(())
+    }
+
+    fn visit_list_start(&mut self) -> Result<(), Self::Error> {
+        self.writer.write_byte(BYTE_LIST_START);
+        Ok(())
+    }
+
+    fn visit_list_end(&mut self) -> Result<(), Self::Error> {
+        self.writer.write_byte(BYTE_END);
+        Ok(())
+    }
+
+    fn visit_dict_start(&mut self) -> Result<(), Self::Error> {
+        self.writer.write_byte(BYTE_DICT_START);
+        Ok(())
+    }
+
+    fn visit_dict_key(&mut self, key: &str) -> Result<(), Self::Error> {
+        write_usize_write(self.writer, key.len());
+        self.writer.write_byte(BYTE_STRING_SEP);
+        self.writer.write_bytes(key.as_bytes());
+        Ok(())
+    }
+
+    fn visit_dict_end(&mut self) -> Result<(), Self::Error> {
+        self.writer.write_byte(BYTE_END);
+        Ok(())
+    }
+
+    fn visit_none(&mut self) -> Result<(), Self::Error> {
+        Ok(())
     }
 }
 
@@ -53,47 +113,8 @@ fn write_i64(destination: &mut dyn IDestination, value: i64) {
 /// * `node` - The bencode node to stringify
 /// * `destination` - The destination to write the string representation to
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
-    match node {
-        // Handle integer nodes: write 'i', digits, 'e' without allocation
-        Node::Integer(value) => {
-            destination.add_byte(BYTE_INTEGER_START);
-            write_i64(destination, *value);
-            destination.add_byte(BYTE_END);
-        }
-        // Handle string nodes: write '<length>:<value>' without allocation
-        Node::Str(value) => {
-            write_usize(destination, value.len());
-            destination.add_byte(BYTE_STRING_SEP);
-            destination.add_bytes(value);
-        }
-        // Handle list nodes by wrapping items with 'l' and 'e' markers
-        Node::List(items) => {
-            destination.add_byte(BYTE_LIST_START);
-            for item in items {
-                stringify(item, destination)?;
-            }
-            destination.add_byte(BYTE_END);
-        }
-        // Handle dictionary nodes by wrapping sorted key-value pairs with 'd' and 'e' markers
-        Node::Dictionary(items) => {
-            destination.add_byte(BYTE_DICT_START);
-            let mut sorted: Vec<_> = items.iter().collect();
-            sorted.sort_by(|a, b| a.0.cmp(b.0));
-            for (key, value) in sorted {
-                // Inline key encoding — avoids key.clone() + recursive call
-                write_usize(destination, key.len());
-                destination.add_byte(BYTE_STRING_SEP);
-                destination.add_bytes(key);
-                stringify(value, destination)?;
-            }
-            destination.add_byte(BYTE_END);
-        }
-        // Skip None nodes as they don't have a string representation
-        Node::None => {
-            // Do nothing for None nodes or handle as appropriate
-        }
-    }
-    Ok(())
+    let mut encoder = BencodeEncoder::new(destination);
+    node.accept(&mut encoder)
 }
 
 /// Converts a bencode Node into its string representation and returns it as a String.

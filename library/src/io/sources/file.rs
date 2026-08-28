@@ -1,4 +1,4 @@
-use crate::io::traits::ISource;
+use crate::io::traits::{BencodeRead, ISource, RewindableRead};
 use std::fs::File as StdFile;
 use std::io::{Read, Seek, SeekFrom};
 
@@ -35,9 +35,18 @@ impl File {
     }
 }
 
-impl ISource for File {
-    /// Moves to the next byte in the file
-    fn next(&mut self) {
+impl BencodeRead for File {
+    fn peek_byte(&mut self) -> Option<u8> {
+        self.current_byte
+    }
+
+    fn read_byte(&mut self) -> Option<u8> {
+        let b = self.current_byte;
+        self.advance();
+        b
+    }
+
+    fn advance(&mut self) {
         let mut byte = [0u8; 1];
         self.current_byte = if self.file.read(&mut byte).unwrap_or(0) == 1 {
             Some(byte[0])
@@ -46,17 +55,12 @@ impl ISource for File {
         };
     }
 
-    /// Returns the current byte as a character
-    fn current(&mut self) -> Option<char> {
-        self.current_byte.map(|b| b as char)
-    }
-
-    /// Checks if there are more bytes to read
-    fn more(&mut self) -> bool {
+    fn has_more(&mut self) -> bool {
         self.current_byte.is_some()
     }
+}
 
-    /// Resets the file position to the start
+impl RewindableRead for File {
     fn reset(&mut self) {
         if let Ok(_) = self.file.seek(SeekFrom::Start(0)) {
             let mut byte = [0u8; 1];
@@ -68,6 +72,8 @@ impl ISource for File {
         }
     }
 }
+
+impl ISource for File {}
 #[cfg(test)]
 mod tests {
     use super::*;

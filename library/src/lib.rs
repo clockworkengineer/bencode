@@ -123,6 +123,15 @@ pub use stringify::default::stringify_to_bytes;
 /// Converts a Node tree to bencode format as a String
 pub use stringify::default::stringify_to_string;
 
+/// Core SOLID I/O abstractions
+pub use io::traits::{BencodeRead, BencodeWrite, BufferedWrite, RewindableRead};
+
+/// Schema validation and typed dictionary query extension trait
+pub use nodes::query::NodeQueryExt;
+
+/// Visitor pattern traits for format serialization
+pub use stringify::visitor::{BencodeVisitable, BencodeVisitor};
+
 /// Converts a Node tree to JSON format (requires "json" feature)
 #[cfg(feature = "json")]
 pub use stringify::json::stringify as to_json;
@@ -138,3 +147,4 @@ pub use stringify::xml::stringify as to_xml;
 /// Converts a Node tree to YAML format (requires "yaml" feature)
 #[cfg(feature = "yaml")]
 pub use stringify::yaml::stringify as to_yaml;
+

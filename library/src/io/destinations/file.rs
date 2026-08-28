@@ -1,4 +1,4 @@
-use crate::io::traits::IDestination;
+use crate::io::traits::{BencodeWrite, BufferedWrite, IDestination};
 use std::fs::File as StdFile;
 use std::io::{Read, Seek, Write};
 
@@ -41,38 +41,32 @@ impl File {
     pub fn close(&self) -> std::io::Result<()> {
         Ok(())
     }
-}
-
-impl IDestination for File {
-    /// Adds a single byte to the end of the file.
-    ///
-    /// # Arguments
-    /// * `b` - The byte to append
-    fn add_byte(&mut self, b: u8) {
-        self.file.write_all(&[b]).unwrap();
-        self.file_length += 1
-    }
-
-    /// Adds a string of bytes to the end of the file.
-    ///
-    /// # Arguments
-    /// * `s` - The string to append as bytes
-    fn add_bytes(&mut self, s: &str) {
-        self.file.write_all(s.as_bytes()).unwrap();
-        self.file_length = self.file_length + s.len();
-    }
 
     /// Clears the file content by recreating it.
-    fn clear(&mut self) {
+    pub fn clear(&mut self) {
         self.file = StdFile::create(&self.file_name).unwrap();
         self.file_length = 0;
     }
+}
 
-    /// Returns the last byte in the file, if any.
-    ///
-    /// # Returns
-    /// The last byte as Some(u8) or None if the file is empty
-    fn last(&self) -> Option<u8> {
+impl BencodeWrite for File {
+    fn write_byte(&mut self, byte: u8) {
+        self.file.write_all(&[byte]).unwrap();
+        self.file_length += 1;
+    }
+
+    fn write_bytes(&mut self, bytes: &[u8]) {
+        self.file.write_all(bytes).unwrap();
+        self.file_length += bytes.len();
+    }
+}
+
+impl BufferedWrite for File {
+    fn clear(&mut self) {
+        self.clear();
+    }
+
+    fn last_byte(&self) -> Option<u8> {
         if self.file_length == 0 {
             None
         } else {
@@ -84,6 +78,8 @@ impl IDestination for File {
         }
     }
 }
+
+impl IDestination for File {}
 
 #[cfg(test)]
 mod tests {

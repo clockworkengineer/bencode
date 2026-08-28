@@ -29,7 +29,7 @@ use alloc::{
 use std::collections::{BTreeMap, HashMap};
 
 use crate::Node;
-use crate::io::traits::IDestination;
+use crate::io::traits::{BencodeWrite, IDestination};
 use crate::stringify::common::escape_string;
 
 /// Converts a Node structure to a TOML formatted string
@@ -60,17 +60,17 @@ pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), 
 fn stringify_value(
     value: &Node,
     add_cr: bool,
-    destination: &mut dyn IDestination,
+    destination: &mut (impl BencodeWrite + ?Sized),
 ) -> Result<(), String> {
     match value {
         Node::Str(s) => stringify_str(s, destination),
         Node::Integer(value) => stringify_number(value, destination),
         Node::List(items) => stringify_array(items, destination)?,
-        Node::None => destination.add_bytes("null"),
+        Node::None => destination.write_bytes(b"null"),
         Node::Dictionary(_) => return Ok(()), // Handled separately for table syntax
     }
     if add_cr {
-        destination.add_bytes("\n");
+        destination.write_bytes(b"\n");
     }
     Ok(())
 }
@@ -79,10 +79,10 @@ fn stringify_value(
 /// # Arguments
 /// * `s` - The string to convert
 /// * `destination` - The destination to write to
-fn stringify_str(s: &str, destination: &mut dyn IDestination) {
-    destination.add_bytes("\"");
+fn stringify_str(s: &str, destination: &mut (impl BencodeWrite + ?Sized)) {
+    destination.write_bytes(b"\"");
     escape_string(s, destination);
-    destination.add_bytes("\"");
+    destination.write_bytes(b"\"");
 }
 
 /// Converts a numeric value to its TOML string representation
@@ -91,8 +91,8 @@ fn stringify_str(s: &str, destination: &mut dyn IDestination) {
 /// # Arguments
 /// * `value` - The numeric value to convert
 /// * `destination` - The destination to write to
-fn stringify_number(value: &i64, destination: &mut dyn IDestination) {
-    destination.add_bytes(&value.to_string())
+fn stringify_number(value: &i64, destination: &mut (impl BencodeWrite + ?Sized)) {
+    destination.write_bytes(value.to_string().as_bytes())
 }
 
 /// Converts an array of Nodes to its TOML string representation
@@ -105,7 +105,7 @@ fn stringify_number(value: &i64, destination: &mut dyn IDestination) {
 /// # Returns
 /// * `Ok(())` if successful
 /// * `Err(String)` if the array contains mixed types
-fn stringify_array(items: &Vec<Node>, destination: &mut dyn IDestination) -> Result<(), String> {
+fn stringify_array(items: &Vec<Node>, destination: &mut (impl BencodeWrite + ?Sized)) -> Result<(), String> {
     let first_type = get_node_type(&items[0]);
 
     for item in items {
@@ -114,14 +114,14 @@ fn stringify_array(items: &Vec<Node>, destination: &mut dyn IDestination) -> Res
         }
     }
 
-    destination.add_bytes("[");
+    destination.write_bytes(b"[");
     for (i, item) in items.iter().enumerate() {
         if i > 0 {
-            destination.add_bytes(", ");
+            destination.write_bytes(b", ");
         }
         stringify_value(item, false, destination)?;
     }
-    destination.add_bytes("]");
+    destination.write_bytes(b"]");
     Ok(())
 }
 
@@ -156,20 +156,20 @@ fn get_node_type(node: &Node) -> &'static str {
 /// * `Ok(())` if successful
 fn stringify_key_value_pair(
     prefix: &str,
-    destination: &mut dyn IDestination,
+    destination: &mut (impl BencodeWrite + ?Sized),
     is_first: &mut bool,
     key: &String,
     value: &Node,
 ) -> Result<(), String> {
     if !prefix.is_empty() && *is_first {
-        destination.add_bytes("[");
-        destination.add_bytes(prefix);
-        destination.add_bytes("]\n");
+        destination.write_bytes(b"[");
+        destination.write_bytes(prefix.as_bytes());
+        destination.write_bytes(b"]\n");
         *is_first = false;
     }
 
-    destination.add_bytes(key);
-    destination.add_bytes(" = ");
+    destination.write_bytes(key.as_bytes());
+    destination.write_bytes(b" = ");
     stringify_value(value, true, destination)?;
 
     Ok(())
@@ -194,7 +194,7 @@ fn stringify_key_value_pair(
 fn stringify_object(
     dict: &HashMap<String, Node>,
     prefix: &str,
-    destination: &mut dyn IDestination,
+    destination: &mut (impl BencodeWrite + ?Sized),
 ) -> Result<(), String> {
     if dict.is_empty() {
         return Ok(());
@@ -262,7 +262,7 @@ fn get_tables_in_dict(
 fn process_key_value_pairs<'a>(
     dict_sorted: &BTreeMap<&'a String, &'a Node>,
     prefix: &str,
-    destination: &mut dyn IDestination,
+    destination: &mut (impl BencodeWrite + ?Sized),
 ) -> Result<(), String> {
     for (key, value) in dict_sorted {
         match value {
@@ -297,7 +297,7 @@ fn process_key_value_pairs<'a>(
 fn process_nested_tables(
     tables: &BTreeMap<&String, &HashMap<String, Node>>,
     prefix: &str,
-    destination: &mut dyn IDestination,
+    destination: &mut (impl BencodeWrite + ?Sized),
 ) -> Result<(), String> {
     for (key, nested) in tables {
         let new_prefix = calculate_prefix(prefix, key);
@@ -321,15 +321,15 @@ fn process_nested_tables(
 fn process_array_tables(
     array_tables: &BTreeMap<&String, &Vec<Node>>,
     prefix: &str,
-    destination: &mut dyn IDestination,
+    destination: &mut (impl BencodeWrite + ?Sized),
 ) -> Result<(), String> {
     for (key, items) in array_tables {
         for item in &**items {
             if let Node::Dictionary(nested) = item {
                 let new_prefix = calculate_prefix(prefix, key);
-                destination.add_bytes("[[");
-                destination.add_bytes(&new_prefix);
-                destination.add_bytes("]]\n");
+                destination.write_bytes(b"[[");
+                destination.write_bytes(new_prefix.as_bytes());
+                destination.write_bytes(b"]]\n");
                 process_nested_array_table(nested, &new_prefix, destination)?;
             }
         }
@@ -353,10 +353,10 @@ fn process_array_tables(
 fn process_nested_array_table(
     nested: &HashMap<String, Node>,
     new_prefix: &str,
-    destination: &mut dyn IDestination,
+    destination: &mut (impl BencodeWrite + ?Sized),
 ) -> Result<(), String> {
     let nested_sorted: BTreeMap<_, _> = nested.iter().collect();
-    process_simple_values(&nested_sorted, destination)?;
+    let _ = process_simple_values(&nested_sorted, destination)?;
     process_nested_objects(&nested_sorted, new_prefix, destination)?;
     Ok(())
 }
@@ -373,7 +373,7 @@ fn process_nested_array_table(
 /// * `Err(String)` if an error occurred during processing
 fn process_simple_values(
     nested_sorted: &BTreeMap<&String, &Node>,
-    destination: &mut dyn IDestination,
+    destination: &mut (impl BencodeWrite + ?Sized),
 ) -> Result<(), String> {
     for (inner_key, inner_value) in nested_sorted {
         match inner_value {
@@ -418,7 +418,7 @@ fn process_simple_values(
 fn process_nested_objects(
     nested_sorted: &BTreeMap<&String, &Node>,
     new_prefix: &str,
-    destination: &mut dyn IDestination,
+    destination: &mut (impl BencodeWrite + ?Sized),
 ) -> Result<(), String> {
     for (inner_key, inner_value) in nested_sorted {
         match inner_value {

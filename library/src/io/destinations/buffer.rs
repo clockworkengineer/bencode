@@ -1,7 +1,7 @@
 #[cfg(not(feature = "std"))]
 use alloc::{string::String, vec, vec::Vec};
 
-use crate::io::traits::IDestination;
+use crate::io::traits::{BencodeWrite, BufferedWrite, IDestination};
 /// A memory buffer implementation for storing encoded bencode data as bytes.
 /// Provides functionality to write and manipulate byte content in memory.
 pub struct Buffer {
@@ -25,29 +25,34 @@ impl Buffer {
     pub fn to_string(&self) -> String {
         String::from_utf8_lossy(&self.buffer).into_owned()
     }
+
+    /// Clears all content from the buffer.
+    pub fn clear(&mut self) {
+        self.buffer.clear();
+    }
 }
 
-impl IDestination for Buffer {
-    /// Adds a single byte to the end of the buffer.
-    fn add_byte(&mut self, byte: u8) {
+impl BencodeWrite for Buffer {
+    fn write_byte(&mut self, byte: u8) {
         self.buffer.push(byte);
     }
 
-    /// Adds multiple bytes from a string slice to the buffer.
-    fn add_bytes(&mut self, bytes: &str) {
-        self.buffer.extend_from_slice(bytes.as_bytes());
+    fn write_bytes(&mut self, bytes: &[u8]) {
+        self.buffer.extend_from_slice(bytes);
     }
+}
 
-    /// Clears all content from the buffer.
+impl BufferedWrite for Buffer {
     fn clear(&mut self) {
-        self.buffer.clear();
+        self.clear();
     }
 
-    /// Returns the last byte in the buffer, if any.
-    fn last(&self) -> Option<u8> {
+    fn last_byte(&self) -> Option<u8> {
         self.buffer.last().copied()
     }
 }
+
+impl IDestination for Buffer {}
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,7 +1,7 @@
 #[cfg(not(feature = "std"))]
 use alloc::format;
 
-use crate::io::traits::IDestination;
+use crate::io::traits::BencodeWrite;
 
 /// Escapes and writes a string value to the destination, handling special characters
 /// and converting unprintable characters to \u escape sequences.
@@ -9,17 +9,17 @@ use crate::io::traits::IDestination;
 /// # Arguments
 /// * `value` - The string value to escape and write
 /// * `destination` - The destination to write the escaped string to
-pub(crate) fn escape_string(value: &str, destination: &mut dyn IDestination) {
+pub(crate) fn escape_string(value: &str, destination: &mut (impl BencodeWrite + ?Sized)) {
     for &byte in value.as_bytes() {
         if byte == b'"' || byte == b'\\' {
-            destination.add_byte(b'\\');
-            destination.add_byte(byte);
+            destination.write_byte(b'\\');
+            destination.write_byte(byte);
         } else if byte.is_ascii_graphic() || byte == b' ' {
-            destination.add_byte(byte);
+            destination.write_byte(byte);
         } else {
             // Convert unprintable characters to \u escape sequence
             let escaped = format!("\\u{:04x}", byte);
-            destination.add_bytes(&escaped);
+            destination.write_bytes(escaped.as_bytes());
         }
     }
 }

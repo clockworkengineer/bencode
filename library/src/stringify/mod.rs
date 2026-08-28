@@ -22,4 +22,8 @@ pub mod xml;
 #[cfg(feature = "toml")]
 pub mod toml;
 
+/// Visitor pattern interface for format serialization
+pub mod visitor;
+
 mod common;
+

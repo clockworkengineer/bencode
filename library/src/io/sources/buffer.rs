@@ -1,7 +1,7 @@
 #[cfg(not(feature = "std"))]
 use alloc::{string::String, vec::Vec};
 
-use crate::io::traits::ISource;
+use crate::io::traits::{BencodeRead, ISource, RewindableRead};
 
 /// A memory buffer implementation for reading bencode data from bytes.
 /// Provides functionality to traverse and read byte content from memory.
@@ -33,30 +33,48 @@ impl Buffer {
     pub fn to_string(&self) -> String {
         String::from_utf8_lossy(&self.buffer).into_owned()
     }
+
+    /// Resets the buffer position to the start.
+    pub fn reset(&mut self) {
+        self.position = 0;
+    }
 }
 
-impl ISource for Buffer {
-    /// Moves to the next character in the buffer
-    fn next(&mut self) {
-        self.position += 1;
-    }
-    /// Returns the current character at the buffer position
-    fn current(&mut self) -> Option<char> {
-        if self.more() {
-            Some(self.buffer[self.position] as char)
+impl BencodeRead for Buffer {
+    fn peek_byte(&mut self) -> Option<u8> {
+        if self.position < self.buffer.len() {
+            Some(self.buffer[self.position])
         } else {
             None
         }
     }
-    /// Checks if there are more characters to read
-    fn more(&mut self) -> bool {
+
+    fn read_byte(&mut self) -> Option<u8> {
+        if self.position < self.buffer.len() {
+            let byte = self.buffer[self.position];
+            self.position += 1;
+            Some(byte)
+        } else {
+            None
+        }
+    }
+
+    fn advance(&mut self) {
+        self.position += 1;
+    }
+
+    fn has_more(&mut self) -> bool {
         self.position < self.buffer.len()
     }
-    /// Resets the buffer position to the start
+}
+
+impl RewindableRead for Buffer {
     fn reset(&mut self) {
-        self.position = 0;
+        self.reset();
     }
 }
+
+impl ISource for Buffer {}
 #[cfg(test)]
 mod tests {
     use super::*;

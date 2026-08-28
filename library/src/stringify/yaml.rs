@@ -8,7 +8,7 @@ use alloc::{
     vec::Vec,
 };
 
-use crate::io::traits::IDestination;
+use crate::io::traits::{BencodeWrite, IDestination};
 use crate::nodes::node::*;
 use crate::stringify::common::escape_string;
 
@@ -17,9 +17,9 @@ use crate::stringify::common::escape_string;
 /// # Arguments
 /// * `level` - The indentation level (number of 2-space indents)
 /// * `destination` - The output destination to write to
-fn write_indent(level: usize, destination: &mut dyn IDestination) {
+fn write_indent(level: usize, destination: &mut (impl BencodeWrite + ?Sized)) {
     for _ in 1..level {
-        destination.add_bytes("  ");
+        destination.write_bytes(b"  ");
     }
 }
 
@@ -29,48 +29,48 @@ fn write_indent(level: usize, destination: &mut dyn IDestination) {
 /// * `node` - The Bencode node to serialize
 /// * `level` - Current indentation level
 /// * `destination` - The output destination to write to
-fn write_node(node: &Node, level: usize, destination: &mut dyn IDestination) {
+fn write_node(node: &Node, level: usize, destination: &mut (impl BencodeWrite + ?Sized)) {
     match node {
         // Write integer values directly
-        Node::Integer(n) => destination.add_bytes(&n.to_string()),
+        Node::Integer(n) => destination.write_bytes(n.to_string().as_bytes()),
         // Write strings with quotes and proper UTF-8 encoding
         Node::Str(s) => {
-            destination.add_byte(b'"');
-            escape_string(&s, destination);
-            destination.add_byte(b'"');
+            destination.write_byte(b'"');
+            escape_string(s, destination);
+            destination.write_byte(b'"');
         }
         // Write lists with proper YAML array formatting
         Node::List(items) => {
             if items.is_empty() {
-                destination.add_bytes("[]")
+                destination.write_bytes(b"[]")
             } else {
-                destination.add_bytes("\n");
+                destination.write_bytes(b"\n");
                 for item in items {
                     write_indent(level + 1, destination);
-                    destination.add_bytes("- ");
+                    destination.write_bytes(b"- ");
                     write_node(item, level + 1, destination);
-                    destination.add_bytes("\n");
+                    destination.write_bytes(b"\n");
                 }
             }
         }
         // Write dictionaries with proper YAML mapping format
         Node::Dictionary(dict) => {
             if dict.is_empty() {
-                destination.add_bytes("{}")
+                destination.write_bytes(b"{}")
             } else {
-                destination.add_bytes("\n");
+                destination.write_bytes(b"\n");
                 let mut sorted: Vec<_> = dict.iter().collect();
                 sorted.sort_by(|a, b| a.0.cmp(b.0));
                 for (key, value) in sorted {
                     write_indent(level + 1, destination);
-                    destination.add_bytes(&format!("{}: ", String::from_utf8_lossy(key.as_ref())));
+                    destination.write_bytes(format!("{}: ", String::from_utf8_lossy(key.as_ref())).as_bytes());
                     write_node(value, level + 1, destination);
-                    destination.add_bytes("\n");
+                    destination.write_bytes(b"\n");
                 }
             }
         }
         // Handle unknown/unsupported node types
-        _ => destination.add_bytes("unknown"),
+        _ => destination.write_bytes(b"unknown"),
     }
 }
 

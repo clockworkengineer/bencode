@@ -1,9 +1,88 @@
 #[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
 
-use crate::io::traits::IDestination;
+use crate::io::traits::{BencodeWrite, IDestination};
 use crate::nodes::node::*;
 use crate::stringify::common::escape_string;
+use crate::stringify::visitor::{BencodeVisitable, BencodeVisitor};
+
+/// XML format serializer implementing the `BencodeVisitor` pattern.
+pub struct XmlSerializer<'a, W: BencodeWrite + ?Sized> {
+    writer: &'a mut W,
+    dict_item_active: Vec<bool>,
+}
+
+impl<'a, W: BencodeWrite + ?Sized> XmlSerializer<'a, W> {
+    /// Creates a new XmlSerializer writing to the given writer.
+    pub fn new(writer: &'a mut W) -> Self {
+        Self {
+            writer,
+            dict_item_active: Vec::new(),
+        }
+    }
+}
+
+impl<'a, W: BencodeWrite + ?Sized> BencodeVisitor for XmlSerializer<'a, W> {
+    type Error = String;
+
+    fn visit_integer(&mut self, value: i64) -> Result<(), Self::Error> {
+        self.writer.write_bytes(b"<integer>");
+        self.writer.write_bytes(value.to_string().as_bytes());
+        self.writer.write_bytes(b"</integer>");
+        Ok(())
+    }
+
+    fn visit_string(&mut self, value: &str) -> Result<(), Self::Error> {
+        self.writer.write_bytes(b"<string>");
+        escape_string(value, self.writer);
+        self.writer.write_bytes(b"</string>");
+        Ok(())
+    }
+
+    fn visit_list_start(&mut self) -> Result<(), Self::Error> {
+        self.writer.write_bytes(b"<list>");
+        Ok(())
+    }
+
+    fn visit_list_end(&mut self) -> Result<(), Self::Error> {
+        self.writer.write_bytes(b"</list>");
+        Ok(())
+    }
+
+    fn visit_dict_start(&mut self) -> Result<(), Self::Error> {
+        self.writer.write_bytes(b"<dictionary>");
+        self.dict_item_active.push(false);
+        Ok(())
+    }
+
+    fn visit_dict_key(&mut self, key: &str) -> Result<(), Self::Error> {
+        if let Some(active) = self.dict_item_active.last_mut() {
+            if *active {
+                self.writer.write_bytes(b"</value></item>");
+            } else {
+                *active = true;
+            }
+        }
+        self.writer.write_bytes(b"<item><key>");
+        self.writer.write_bytes(key.as_bytes());
+        self.writer.write_bytes(b"</key><value>");
+        Ok(())
+    }
+
+    fn visit_dict_end(&mut self) -> Result<(), Self::Error> {
+        if let Some(active) = self.dict_item_active.pop() {
+            if active {
+                self.writer.write_bytes(b"</value></item>");
+            }
+        }
+        self.writer.write_bytes(b"</dictionary>");
+        Ok(())
+    }
+
+    fn visit_none(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
 
 /// Converts a bencode Node into XML format and writes it to the given destination.
 /// Each node type is wrapped in appropriate XML tags based on its type.
@@ -12,42 +91,8 @@ use crate::stringify::common::escape_string;
 /// * `node` - The bencode Node to convert
 /// * `destination` - The destination to write the XML output to
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
-    match node {
-        Node::Str(value) => {
-            // Wrap string value in <string> tags
-            destination.add_bytes("<string>");
-            escape_string(&value, destination);
-            destination.add_bytes("</string>");
-        }
-        Node::Integer(value) => {
-            // Wrap integer value in <integer> tags
-            destination.add_bytes("<integer>");
-            destination.add_bytes(&value.to_string());
-            destination.add_bytes("</integer>");
-        }
-        Node::List(items) => {
-            // Create a list container and recursively stringify each item
-            destination.add_bytes("<list>");
-            for item in items {
-                stringify(item, destination)?;
-            }
-            destination.add_bytes("</list>");
-        }
-        Node::Dictionary(items) => {
-            // Create a dictionary container with key-value pair items
-            destination.add_bytes("<dictionary>");
-            for (key, value) in items {
-                destination.add_bytes("<item><key>");
-                destination.add_bytes(key);
-                destination.add_bytes("</key><value>");
-                stringify(value, destination)?;
-                destination.add_bytes("</value></item>");
-            }
-            destination.add_bytes("</dictionary>");
-        }
-        Node::None => {}
-    }
-    Ok(())
+    let mut serializer = XmlSerializer::new(destination);
+    node.accept(&mut serializer)
 }
 
 #[cfg(test)]

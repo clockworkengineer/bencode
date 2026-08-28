@@ -5,7 +5,6 @@
 #[cfg(test)]
 mod tests {
     use crate::BufferDestination;
-    use crate::io::traits::IDestination;
     use crate::nodes::node::Node;
     use crate::stringify::json::stringify;
     use std::collections::HashMap;

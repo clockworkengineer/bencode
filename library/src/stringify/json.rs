@@ -4,9 +4,111 @@ use alloc::{
     vec::Vec,
 };
 
-use crate::io::traits::IDestination;
+use crate::io::traits::{BencodeWrite, IDestination};
 use crate::nodes::node::*;
 use crate::stringify::common::escape_string;
+use crate::stringify::visitor::{BencodeVisitable, BencodeVisitor};
+
+struct JsonContext {
+    first_item: bool,
+}
+
+/// JSON format serializer implementing the `BencodeVisitor` pattern.
+pub struct JsonSerializer<'a, W: BencodeWrite + ?Sized> {
+    writer: &'a mut W,
+    stack: Vec<JsonContext>,
+    after_key: bool,
+}
+
+impl<'a, W: BencodeWrite + ?Sized> JsonSerializer<'a, W> {
+    /// Creates a new JsonSerializer writing to the given writer.
+    pub fn new(writer: &'a mut W) -> Self {
+        Self {
+            writer,
+            stack: Vec::new(),
+            after_key: false,
+        }
+    }
+
+    fn prepare_value(&mut self) {
+        if self.after_key {
+            self.after_key = false;
+            return;
+        }
+        if let Some(ctx) = self.stack.last_mut() {
+            if !ctx.first_item {
+                self.writer.write_byte(b',');
+            } else {
+                ctx.first_item = false;
+            }
+        }
+    }
+}
+
+impl<'a, W: BencodeWrite + ?Sized> BencodeVisitor for JsonSerializer<'a, W> {
+    type Error = String;
+
+    fn visit_integer(&mut self, value: i64) -> Result<(), Self::Error> {
+        self.prepare_value();
+        self.writer.write_bytes(value.to_string().as_bytes());
+        Ok(())
+    }
+
+    fn visit_string(&mut self, value: &str) -> Result<(), Self::Error> {
+        self.prepare_value();
+        self.writer.write_byte(b'"');
+        escape_string(value, self.writer);
+        self.writer.write_byte(b'"');
+        Ok(())
+    }
+
+    fn visit_list_start(&mut self) -> Result<(), Self::Error> {
+        self.prepare_value();
+        self.writer.write_byte(b'[');
+        self.stack.push(JsonContext { first_item: true });
+        Ok(())
+    }
+
+    fn visit_list_end(&mut self) -> Result<(), Self::Error> {
+        self.stack.pop();
+        self.writer.write_byte(b']');
+        Ok(())
+    }
+
+    fn visit_dict_start(&mut self) -> Result<(), Self::Error> {
+        self.prepare_value();
+        self.writer.write_byte(b'{');
+        self.stack.push(JsonContext { first_item: true });
+        Ok(())
+    }
+
+    fn visit_dict_key(&mut self, key: &str) -> Result<(), Self::Error> {
+        if let Some(ctx) = self.stack.last_mut() {
+            if !ctx.first_item {
+                self.writer.write_byte(b',');
+            } else {
+                ctx.first_item = false;
+            }
+        }
+        self.writer.write_byte(b'"');
+        self.writer.write_bytes(key.as_bytes());
+        self.writer.write_bytes(b"\":");
+        self.after_key = true;
+        Ok(())
+    }
+
+    fn visit_dict_end(&mut self) -> Result<(), Self::Error> {
+        self.stack.pop();
+        self.writer.write_byte(b'}');
+        Ok(())
+    }
+
+    fn visit_none(&mut self) -> Result<(), Self::Error> {
+        self.prepare_value();
+        self.writer.write_bytes(b"null");
+        Ok(())
+    }
+}
 
 /// Converts a Node structure into a JSON string representation and writes it to the given destination.
 /// Handles different node types (Integer, String, List, Dictionary) according to JSON format rules.
@@ -15,46 +117,8 @@ use crate::stringify::common::escape_string;
 /// * `node` - The Node structure to convert
 /// * `destination` - The destination to write the JSON output to
 pub fn stringify(node: &Node, destination: &mut dyn IDestination) -> Result<(), String> {
-    match node {
-        Node::Integer(value) => {
-            destination.add_bytes(&value.to_string());
-        }
-        // Format a string value as JSON by wrapping it in double quotes
-        Node::Str(value) => {
-            destination.add_byte(b'"');
-            escape_string(&value, destination);
-            destination.add_byte(b'"');
-        }
-        Node::List(items) => {
-            destination.add_byte(b'[');
-            for (index, item) in items.iter().enumerate() {
-                if index > 0 {
-                    destination.add_byte(b',');
-                }
-                stringify(item, destination)?;
-            }
-            destination.add_byte(b']');
-        }
-        Node::Dictionary(items) => {
-            destination.add_byte(b'{');
-            let mut sorted: Vec<_> = items.iter().collect();
-            sorted.sort_by(|a, b| a.0.cmp(b.0));
-            for (index, (key, value)) in sorted.iter().enumerate() {
-                if index > 0 {
-                    destination.add_byte(b',');
-                }
-                destination.add_bytes("\"");
-                destination.add_bytes(key);
-                destination.add_bytes("\":");
-                stringify(value, destination)?;
-            }
-            destination.add_byte(b'}');
-        }
-        Node::None => {
-            destination.add_bytes("null");
-        }
-    }
-    Ok(())
+    let mut serializer = JsonSerializer::new(destination);
+    node.accept(&mut serializer)
 }
 
 #[cfg(test)]
