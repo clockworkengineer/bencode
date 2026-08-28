@@ -5,6 +5,7 @@ A Rust library for parsing, constructing, and converting Bencode data. Designed 
 [![Repository](https://img.shields.io/badge/github-clockworkengineer%2Fbencode-blue)](https://github.com/clockworkengineer/bencode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Rust Edition](https://img.shields.io/badge/edition-2024-orange)](library/Cargo.toml)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-orange.svg)](https://buymeacoffee.com/roberttizz1)
 
 ## Features
 
@@ -333,6 +334,14 @@ See [`examples/README.md`](examples/README.md) for full descriptions and a recom
 - [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md) — contributing and project structure
 - [`docs/EMBEDDED_GUIDE.md`](docs/EMBEDDED_GUIDE.md) — `no_std` / embedded usage
 - [`docs/CHANGELOG.md`](docs/CHANGELOG.md) — release history
+
+## Support
+
+If you find this project useful, you can support its development by buying me a coffee:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Donate-orange.svg)](https://buymeacoffee.com/roberttizz1)
+
+Or visit [buymeacoffee.com/roberttizz1](https://buymeacoffee.com/roberttizz1).
 
 ## License
 
