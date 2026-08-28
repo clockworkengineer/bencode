@@ -10,112 +10,112 @@ checksum = "5f0e0fee31ef5ed1ba1316088939cea399010ed7731dba877ed44aeb407a75ea"
 
 [[package]]
 name = "bencode_const_generics"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_create_at_runtime"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_dictionary_ops"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_error_handling"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_fibonacci"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_format_conversions"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_full"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_in_memory"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_iterative"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_lib"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "rand",
 ]
 
 [[package]]
 name = "bencode_lightweight_errors"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_list_ops"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_memory_pool"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_minimal"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_node_api"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_read_torrent_files"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_utility_lib",
  "torrent_file",
@@ -123,7 +123,7 @@ dependencies = [
 
 [[package]]
 name = "bencode_torrent_to_json"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
  "bencode_utility_lib",
@@ -131,7 +131,7 @@ dependencies = [
 
 [[package]]
 name = "bencode_torrent_to_toml"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
  "bencode_utility_lib",
@@ -139,7 +139,7 @@ dependencies = [
 
 [[package]]
 name = "bencode_torrent_to_xml"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
  "bencode_utility_lib",
@@ -147,7 +147,7 @@ dependencies = [
 
 [[package]]
 name = "bencode_torrent_to_yaml"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
  "bencode_utility_lib",
@@ -155,18 +155,18 @@ dependencies = [
 
 [[package]]
 name = "bencode_utility_lib"
-version = "0.2.0"
+version = "0.2.1"
 
 [[package]]
 name = "bencode_validation"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
 
 [[package]]
 name = "bencode_zerocopy"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
@@ -410,7 +410,7 @@ dependencies = [
 
 [[package]]
 name = "torrent_file"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bencode_lib",
 ]
