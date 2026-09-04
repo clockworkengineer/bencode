@@ -9,7 +9,7 @@ use alloc::collections::BTreeMap as HashMap;
 use std::collections::HashMap;
 
 #[cfg(not(feature = "std"))]
-use alloc::vec::Vec;
+use alloc::{string::String, vec::Vec};
 
 use core::fmt;
 

@@ -9,6 +9,7 @@ use crate::io::traits::BencodeWrite;
 /// # Arguments
 /// * `value` - The string value to escape and write
 /// * `destination` - The destination to write the escaped string to
+#[allow(dead_code)]
 pub(crate) fn escape_string(value: &str, destination: &mut (impl BencodeWrite + ?Sized)) {
     for &byte in value.as_bytes() {
         if byte == b'"' || byte == b'\\' {

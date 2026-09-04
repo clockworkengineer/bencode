@@ -16,8 +16,6 @@ json = []
 toml = []
 xml = []
 yaml = []
-[profile.release]
-lto = true
 
 [dependencies]
 rand = { version = "0.10.0", optional = true }

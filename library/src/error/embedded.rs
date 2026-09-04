@@ -5,6 +5,9 @@
 
 use core::fmt;
 
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+
 /// Lightweight error type for bencode parsing in embedded systems.
 /// Uses no heap allocation - all error information is in the enum variant itself.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
